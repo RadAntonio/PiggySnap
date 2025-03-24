@@ -1,10 +1,26 @@
-import { View, Text, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Keyboard,
+  TouchableWithoutFeedback,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
+import Title from "../components/SignupPage/Title";
+import SignupForm from "../components/SignupPage/SignupForm";
 
 function SignupScreen() {
   return (
-    <View style={styles.container}>
-      <Text>SIGNUP PAGE</Text>
-    </View>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.container}
+      >
+        <Title />
+        <SignupForm />
+      </KeyboardAvoidingView>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -17,4 +33,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     fontSize: "30",
   },
+  title: {},
 });

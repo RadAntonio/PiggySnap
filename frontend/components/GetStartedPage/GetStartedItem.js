@@ -8,21 +8,14 @@ import {
 import { Colors } from "../../constants/Colors";
 
 export default function GetStartedItem({ item }) {
-  const { width } = useWindowDimensions();
 
+  const { width } = useWindowDimensions();
   return (
     <View style={[styles.container, { width }]}>
       <View style={styles.card}>
         <Image
           source={item.image}
-          style={{
-            width: width * 0.6,
-            height: width * 0.6,
-            resizeMode: "contain",
-            alignSelf: "center",
-            marginBottom: 100,
-            marginTop: 100,
-          }}
+          style={[styles.image, { width: width * 0.6, height: width * 0.6 }]}
         />
         <Text style={styles.title}>{item.title}</Text>
         <Text style={styles.description}>{item.description}</Text>
@@ -57,11 +50,18 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     color: Colors.primary800,
     textAlign: "center",
+    fontSize: 25
   },
   description: {
     fontWeight: "300",
     color: Colors.primary800,
     textAlign: "center",
     paddingHorizontal: 16,
+  },
+  image: {
+    resizeMode: "contain",
+    alignSelf: "center",
+    marginBottom: 100,
+    marginTop: 100,
   },
 });
