@@ -13,6 +13,7 @@ import {
 import { useState } from "react";
 import SubmitButton from "./SubmitButton";
 import { Colors } from "../../constants/Colors";
+import { useAuth } from "../../context/AuthContext";
 
 const { width } = Dimensions.get("window");
 
@@ -21,6 +22,79 @@ function RegisterForm({ orLogin }) {
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+
+  const { onRegister, onLogin } = useAuth();
+
+  const [inputErrors, setInputErrors] = useState({
+    name: null,
+    email: null,
+    password: null,
+    confirmPassword: null,
+  });
+
+  const login = async () => {
+    const result = await onLogin(email, password);
+    console.log("Login result", result);
+    if (result && result.error) {
+      alert(result.msg);
+    }
+  };
+
+  const register = async () => {
+    const newErrors = {};
+
+    if (!name.trim()) newErrors.name = "* Name is required.";
+    if (!email.trim()) newErrors.email = "* Email is required.";
+
+    if (!password) newErrors.password = "* Password is required.";
+    else if (password.length < 8)
+      newErrors.password = "* Password must be at least 8 characters.";
+    else if (/^\d+$/.test(password))
+      newErrors.password = "* Password cannot be numbers only.";
+
+    if (!confirmPassword) {
+      newErrors.confirmPassword = "* Please confirm your password.";
+    } else if (password !== confirmPassword) {
+      newErrors.confirmPassword = "* Passwords do not match.";
+    }
+
+    setInputErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) return;
+
+    // Backend call
+    const result = await onRegister(name, email, password, confirmPassword);
+
+    if (result?.error) {
+      const backendErrors = result.msg;
+
+      if (backendErrors?.password) {
+        setInputErrors((prev) => ({
+          ...prev,
+          password: backendErrors.password[0], // display first password error
+        }));
+      }
+
+      if (backendErrors?.email) {
+        setInputErrors((prev) => ({
+          ...prev,
+          email: backendErrors.email[0],
+        }));
+      }
+
+      if (backendErrors?.confirm_password) {
+        setInputErrors((prev) => ({
+          ...prev,
+          confirmPassword: backendErrors.confirm_password[0],
+        }));
+      }
+
+      return;
+    }
+
+    // If all good, log in
+    login();
+  };
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -35,7 +109,7 @@ function RegisterForm({ orLogin }) {
               placeholder="Full Name"
               value={name}
               onChangeText={setName}
-              style={styles.input}
+              style={[styles.input, inputErrors.name && styles.inputInvalid]}
               autoCapitalize="words"
             />
           </View>
@@ -45,7 +119,7 @@ function RegisterForm({ orLogin }) {
               placeholder="Email"
               value={email}
               onChangeText={setEmail}
-              style={styles.input}
+              style={[styles.input, inputErrors.email && styles.inputInvalid]}
               autoCapitalize="none"
               keyboardType="email-address"
             />
@@ -57,7 +131,11 @@ function RegisterForm({ orLogin }) {
               value={password}
               onChangeText={setPassword}
               secureTextEntry
-              style={styles.input}
+              style={[
+                styles.input,
+                inputErrors.password ||
+                  (inputErrors.passwordNumeric && styles.inputInvalid),
+              ]}
             />
           </View>
           <View style={styles.inputGroup}>
@@ -67,22 +145,44 @@ function RegisterForm({ orLogin }) {
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               secureTextEntry
-              style={styles.input}
+              style={[
+                styles.input,
+                inputErrors.confirmPassword && styles.inputInvalid,
+              ]}
             />
           </View>
-
+          {inputErrors.password && (
+            <Text style={styles.errorText}>{inputErrors.password}</Text>
+          )}
+          {inputErrors.email && (
+            <Text style={styles.errorText}>{inputErrors.email}</Text>
+          )}
+          {inputErrors.confirmPassword && (
+            <Text style={styles.errorText}>{inputErrors.name}</Text>
+          )}
+          {inputErrors.name && (
+            <Text style={styles.errorText}>{inputErrors.confirmPassword}</Text>
+          )}
           <View style={styles.buttonContainer}>
             <SubmitButton
               text="Sign Up"
-              onPress={() => {
-                console.log("submit");
-              }}
-              style={{ backgroundColor: Colors.primary800}}
+              onPress={register}
+              style={{ backgroundColor: Colors.primary800 }}
             />
           </View>
           <View style={styles.inlineRow}>
             <Text style={styles.inlineText}>Have an account? </Text>
-            <SubmitButton onPress={orLogin} text="Log in" style={{backgroundColor: Colors.primary600}} textStyle={{color: 'white', fontSize:12, marginVertical: -10, marginHorizontal: -14}} />
+            <SubmitButton
+              onPress={orLogin}
+              text="Log in"
+              style={{ backgroundColor: Colors.primary600 }}
+              textStyle={{
+                color: "white",
+                fontSize: 12,
+                marginVertical: -10,
+                marginHorizontal: -14,
+              }}
+            />
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -107,7 +207,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#536493",
     marginBottom: 20,
-    textAlign: 'center',
+    textAlign: "center",
   },
   input: {
     width: "100%",
@@ -122,15 +222,13 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     marginVertical: 10,
-
-
   },
   inlineRow: {
     flexDirection: "row",
     alignItems: "center",
     marginTop: 16,
     width: "100%",
-    justifyContent: 'center'
+    justifyContent: "center",
   },
 
   inlineText: {
@@ -145,12 +243,22 @@ const styles = StyleSheet.create({
   },
   inputGroup: {
     width: "100%",
-    alignItems: "flex-start", // aligns label to the left
+    alignItems: "flex-start",
   },
   label: {
     fontSize: 14,
     color: "#536493",
     fontWeight: "600",
-    marginBottom: 3
+    marginBottom: 3,
+  },
+  inputInvalid: {
+    backgroundColor: "#ffe6e6", // soft red, not harsh red
+    borderColor: "red",
+  },
+  errorText: {
+    opacity: 0.8,
+    fontStyle: "italic",
+    fontSize: 12,
+    color: Colors.primary600,
   },
 });

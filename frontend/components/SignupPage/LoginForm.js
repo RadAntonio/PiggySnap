@@ -13,12 +13,53 @@ import {
 import { useState } from "react";
 import SubmitButton from "./SubmitButton";
 import { Colors } from "../../constants/Colors";
+import { useAuth } from "../../context/AuthContext";
 
 const { width } = Dimensions.get("window");
 
-function RegisterForm({ orRegister }) {
+function LoginForm({ orRegister }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  const { onLogin } = useAuth();
+
+  const [inputErrors, setInputErrors] = useState({
+    email: null,
+    password: null,
+  });
+
+  const login = async () => {
+    setInputErrors({ email: null, password: null });
+
+    const result = await onLogin(email, password);
+    console.log("Login result", result);
+
+    if (result?.error) {
+      const msg = result.msg;
+
+      if (typeof msg === "object") {
+        const newErrors = {};
+
+        if (msg.email) {
+          newErrors.email = msg.email[0];
+        }
+
+        if (msg.password) {
+          newErrors.password = msg.password[0];
+        }
+
+        if (msg.non_field_errors) {
+          newErrors.email = msg.non_field_errors[0];
+          newErrors.password = msg.non_field_errors[0];
+        }
+
+        setInputErrors(newErrors);
+        return;
+      }
+      alert("Login failed.");
+    }
+
+  };
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -34,10 +75,13 @@ function RegisterForm({ orRegister }) {
               placeholder="Email"
               value={email}
               onChangeText={setEmail}
-              style={styles.input}
+              style={[styles.input, inputErrors.email && styles.inputInvalid]}
               autoCapitalize="none"
               keyboardType="email-address"
             />
+            {inputErrors.email && (
+              <Text style={styles.errorText}>{inputErrors.email}</Text>
+            )}
           </View>
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Password</Text>
@@ -46,16 +90,20 @@ function RegisterForm({ orRegister }) {
               value={password}
               onChangeText={setPassword}
               secureTextEntry
-              style={styles.input}
+              style={[
+                styles.input,
+                inputErrors.password && styles.inputInvalid,
+              ]}
             />
+            {inputErrors.password && (
+              <Text style={styles.errorText}>{inputErrors.password}</Text>
+            )}
           </View>
 
           <View style={styles.buttonContainer}>
             <SubmitButton
               text="Log In"
-              onPress={() => {
-                console.log("submit");
-              }}
+              onPress={login}
               style={{ backgroundColor: Colors.primary800 }}
             />
           </View>
@@ -79,7 +127,7 @@ function RegisterForm({ orRegister }) {
   );
 }
 
-export default RegisterForm;
+export default LoginForm;
 
 const styles = StyleSheet.create({
   card: {
@@ -97,7 +145,6 @@ const styles = StyleSheet.create({
     color: Colors.primary800,
     marginBottom: 20,
     textAlign: "center",
-
   },
   input: {
     width: "100%",
@@ -140,5 +187,17 @@ const styles = StyleSheet.create({
     color: "#536493",
     fontWeight: "600",
     marginBottom: 3,
+  },
+  errorText: {
+    opacity: 0.8,
+    fontStyle: "italic",
+    fontSize: 12,
+    color: Colors.primary600,
+    marginTop: -10,
+    marginBottom: 10
+  },
+  inputInvalid: {
+    backgroundColor: "#ffe6e6", // soft red, not harsh red
+    borderColor: "red",
   },
 });
