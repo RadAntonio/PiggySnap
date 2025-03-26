@@ -3,6 +3,7 @@ import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 
 const TOKEN_KEY = "user-token";
+const REFRESH_TOKEN_KEY = "refresh-token";
 export const API_URL = "http://192.168.1.136:8000/api/user";
 const AuthContext = createContext();
 
@@ -69,12 +70,15 @@ export const AuthProvider = ({ children }) => {
     const result = await axios.post(`${API_URL}/token`, { email, password });
 
     const token = result.data.access;
+    const refreshToken = result.data.refresh;
 
-    if (!token) {
+    if (!token || !refreshToken) {
       return { error: true, msg: "No token received." };
     }
 
     await SecureStore.setItemAsync(TOKEN_KEY, token);
+    await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refreshToken)
+
     axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
     const user = await fetchUser()
 
@@ -98,6 +102,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     await SecureStore.deleteItemAsync(TOKEN_KEY);
+    await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
 
     axios.defaults.headers.common["Authorization"] = "";
 
@@ -107,6 +112,49 @@ export const AuthProvider = ({ children }) => {
       user: null,
     });
   };
+
+  const refreshAccesToken = async () => {
+    try {
+      const refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY)
+      if(!refreshToken) throw new Error("No refresh Token found")
+
+      const response = await axios.post(`${API_URL}/token/refresh`, {
+        refresh: refreshToken
+      });
+      const newAccessToken = response.data.access
+
+      await SecureStore.setItemAsync(TOKEN_KEY, newAccessToken);
+      axios.defaults.headers.common["Authorization"] = `Bearer ${newAccessToken}`
+
+      setAuthState[{token: newAccessToken, authenticated: true}]
+
+      return newAccessToken
+    } catch(error) {
+      logout();
+      return null;
+    }
+  }
+
+  axios.interceptors.response.use(
+    response => response,
+    async error => {
+      const originalRequest = error.config;
+
+      if (
+        error.response?.status === 401 && !originalRequest._retry
+      ) {
+        originalRequest._retry = true;
+
+        const newAccessToken = await refreshAccesToken();
+
+        if(newAccessToken) {
+          originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`
+          return axios(originalRequest)
+        }
+      }
+      return Promises.reject(error)
+    }
+  )
 
   const value = {
     onRegister: register,

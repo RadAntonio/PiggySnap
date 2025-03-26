@@ -11,6 +11,7 @@ import GetStartedScreen from "./screens/GetStartedScreen";
 import SignupScreen from "./screens/SignupScreen";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import WelcomeScreen from "./screens/WelcomeScreen";
+import LoadingScreen from "./components/LoadingScree";
 
 const TOKEN_KEY = "user-token";
 export const API_URL = "http://192.168.1.136:8000/api/user";
@@ -86,7 +87,7 @@ export const Layout = () => {
   }, []);
 
 
-  if (!isAppReady) return null;
+  if (!isAppReady) return <LoadingScreen />;
 
   return (
     <>
