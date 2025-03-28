@@ -4,6 +4,8 @@ from django.utils.translation import gettext_lazy as _
 
 from core import models
 
+# admin@example.com
+# 123456789admin
 
 class UserAdmin(BaseUserAdmin):
     ordering = ['id']

@@ -57,7 +57,7 @@ export const AuthProvider = ({ children }) => {
       return response;
     } catch (error) {
       const data = error?.response?.data;
-      console.log("🔥 Backend error:", data);
+      console.log("Backend error:", data);
       return {
         error: true,
         msg: data, // 👈 return the full object!
@@ -152,7 +152,7 @@ export const AuthProvider = ({ children }) => {
           return axios(originalRequest)
         }
       }
-      return Promises.reject(error)
+      return Promise.reject(error)
     }
   )
 

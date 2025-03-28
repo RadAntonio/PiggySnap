@@ -157,10 +157,10 @@ function RegisterForm({ orLogin }) {
           {inputErrors.email && (
             <Text style={styles.errorText}>{inputErrors.email}</Text>
           )}
-          {inputErrors.confirmPassword && (
+          {inputErrors.name && (
             <Text style={styles.errorText}>{inputErrors.name}</Text>
           )}
-          {inputErrors.name && (
+          {inputErrors.confirmPassword && (
             <Text style={styles.errorText}>{inputErrors.confirmPassword}</Text>
           )}
           <View style={styles.buttonContainer}>
