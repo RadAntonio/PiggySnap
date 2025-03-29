@@ -11,7 +11,7 @@ from rest_framework import status
 import spacy
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework import permissions
-
+import re
 from rest_framework.decorators import authentication_classes, permission_classes
 
 
@@ -91,11 +91,13 @@ def ocr_receipt(request):
         ocr_text = "\n".join(lines)
 
         entities = extract_data_from_receipt(ocr_text)
+        entitiesStructured = format_ner_entities(entities)
 
 
         return Response({
             "ocr_text": ocr_text,
-            "entities": entities
+            "entities": entities,
+            "entitiesStructured": entitiesStructured,
             })
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -103,3 +105,62 @@ def ocr_receipt(request):
 def extract_data_from_receipt(text):
     doc = nlp(text)
     return [(ent.text, ent.label_) for ent in doc.ents]
+
+def split_quantity_string(quantity_string):
+    cleaned = quantity_string.replace(',', '.').replace(' ', '')
+    pattern = r"^([\d.]+)[A-Za-z\-]*[^\d]*([\d.]+)$"
+    match = re.match(pattern, cleaned)
+    if match:
+        quantity = match.group(1)
+        unit_price = match.group(2)
+        return quantity, unit_price
+    return quantity_string, None
+
+def clean_price_string(price_string):
+    cleaned = price_string.replace(',', '.').replace(' ', '')
+    match = re.search(r"[\d.]+", cleaned)
+    if match:
+        return match.group(0)
+    return price_string
+
+
+def format_ner_entities(entities):
+    store_name = None
+    items = []
+    totals = []
+    current_item = {}
+
+    for text, label in entities:
+        if label == "SHOPNAME" and store_name is None:
+            store_name = text
+
+        elif label == "QUANTITY":
+            quantity, unit_price = split_quantity_string(text)
+            current_item["quantity"] = quantity
+            if unit_price:
+                current_item["unit_price"] = unit_price
+            else:
+                current_item["unit_price"] = "Could not parse unit price"
+
+        elif label == "PRICE":
+            current_item["price"] = clean_price_string(text)
+
+        elif label == "PRODUCT":
+            current_item["name"] = text
+
+        if all(key in current_item for key in ("name", "quantity", "price")):
+            items.append(current_item)
+            current_item = {}
+
+        elif label == "TOTAL":
+            totals.append(clean_price_string(text))
+
+    # Add any leftover partial item
+    if any(k in current_item for k in ("name", "quantity", "price")):
+        items.append(current_item)
+
+    return {
+        "store": {"name": store_name} if store_name else {},
+        "items": items,
+        "total": totals[-1] if totals else None
+    }
