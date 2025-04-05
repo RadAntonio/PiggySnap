@@ -13,7 +13,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework import permissions
 import re
 from rest_framework.decorators import authentication_classes, permission_classes
-
+from core.models import Receipt
 
 nlp = spacy.load("ocr/marius_ner_model")
 
@@ -93,13 +93,18 @@ def ocr_receipt(request):
         entities = extract_data_from_receipt(ocr_text)
         entitiesStructured = format_ner_entities(entities)
 
+        Receipt.objects.create(
+            user=request.user,
+            shop_name=entitiesStructured["store"].get("name", ""),
+            items=entitiesStructured["items"],
+            total=entitiesStructured["total"] if entitiesStructured["total"] else 0,
+        )
 
         return Response({
             "ocr_text": ocr_text,
             "entities": entities,
             "entitiesStructured": entitiesStructured,
             })
-
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 def extract_data_from_receipt(text):

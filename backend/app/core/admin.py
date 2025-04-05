@@ -1,4 +1,6 @@
 from django.contrib import admin
+from django import forms
+from core.models import Receipt, Tag
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.translation import gettext_lazy as _
 
@@ -40,5 +42,30 @@ class UserAdmin(BaseUserAdmin):
         }),
     )
 
+class ReceiptAdminForm(forms.ModelForm):
+    class Meta:
+        model = Receipt
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if 'user' in self.fields:
+            user = self.initial.get('user')
+            if user:
+                self.fields['tags'].queryset = Tag.objects.filter(user=user)
+            else:
+                self.fields['tags'].queryset = Tag.objects.none()
+
+class ReceiptAdmin(admin.ModelAdmin):
+    form = ReceiptAdminForm
+    ordering = ['id']
+    list_display = ['id', 'shop_name', 'total', 'formatted_date']
+
+    def formatted_date(self, obj):
+        return obj.date.strftime("%Y-%m-%d")
+    formatted_date.short_description = 'Date'
+
 
 admin.site.register(models.User, UserAdmin)
+admin.site.register(models.Receipt, ReceiptAdmin)

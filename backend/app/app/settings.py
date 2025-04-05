@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'drf_spectacular',
     'user',
     'ocr',
+    'receipt',
 ]
 
 MIDDLEWARE = [
@@ -142,6 +143,7 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
 }
 
 SPECTACULAR_SETTINGS = {
@@ -167,3 +169,5 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': True,
 }
+
+

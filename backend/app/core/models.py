@@ -7,6 +7,7 @@ from django.contrib.auth.models import (
     BaseUserManager,
     PermissionsMixin,
 )
+from django.utils.timezone import now
 
 
 class UserManager(BaseUserManager):
@@ -40,3 +41,27 @@ class User(AbstractBaseUser, PermissionsMixin):
     objects = UserManager()
 
     USERNAME_FIELD = 'email'
+
+def today_as_datetime():
+    today = now().date()
+    return datetime.combine(today, datetime.min.time())
+
+class Receipt(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='receipts')
+    shop_name = models.CharField(max_length=255)
+    items = models.JSONField()
+    total = models.DecimalField(max_digits=10, decimal_places=2)
+    date = models.DateTimeField(default=today_as_datetime)
+    tags = models.ManyToManyField('Tag', blank=True, related_name='receipts')
+    # def __str__(self):
+        # return f"{self.shop_name} - {self.total} RON - {self.date.strftime('%Y-%m-%d %H:%M:%S')}"
+
+class Tag(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tags')
+    name = models.CharField(max_length=50)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        unique_together = ('user', 'name')
