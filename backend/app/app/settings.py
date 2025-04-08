@@ -150,7 +150,7 @@ SPECTACULAR_SETTINGS = {
     'TITLE': 'backend',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
-    'SECURITY': [{'jwtAuth': []}],  # 👈 this MUST match the name below
+    'SECURITY': [{'jwtAuth': []}],
     'COMPONENT_SPLIT_REQUEST': True,
 
     'COMPONENTS': {

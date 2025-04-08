@@ -12,6 +12,7 @@ import SignupScreen from "./screens/SignupScreen";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import WelcomeScreen from "./screens/WelcomeScreen";
 import LoadingScreen from "./components/LoadingScree";
+import BottomTabNavigator from "./components/BottomTabNavigator";
 
 const TOKEN_KEY = "user-token";
 export const API_URL = "http://192.168.1.136:8000/api/user";
@@ -25,11 +26,12 @@ export default function App() {
     <AuthProvider>
       <Layout></Layout>
     </AuthProvider>
+
   );
 }
 
 export const Layout = () => {
-  const { authState, setAuthState, onLogout } = useAuth();
+  const { authState, setAuthState} = useAuth();
   const [isAppReady, setIsAppReady] = useState(false);
 
   const fetchUser = async () => {
@@ -96,13 +98,9 @@ export const Layout = () => {
         <Stack.Navigator>
           {authState?.authenticated ? (
             <Stack.Screen
-              name="WelcomeScreen"
-              component={WelcomeScreen}
-              options={{
-                headerRight: () => (
-                  <Button onPress={onLogout} title="Sign Out" />
-                ),
-              }}
+              name="MainApp"
+              component={BottomTabNavigator}
+              options={{headerShown: false}}
             />
           ) : (
             <>

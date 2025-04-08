@@ -4,12 +4,10 @@ import * as SecureStore from "expo-secure-store";
 
 const TOKEN_KEY = "user-token";
 const REFRESH_TOKEN_KEY = "refresh-token";
-export const API_URL = "http://192.168.1.136:8000/api/user";
+export const API_URL = "http://192.168.1.136:8000/api";
 const AuthContext = createContext();
 
-export const useAuth = () => {
-  return useContext(AuthContext);
-};
+export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
   const [authState, setAuthState] = useState({
@@ -38,7 +36,7 @@ export const AuthProvider = ({ children }) => {
 
   const fetchUser = async () => {
     try {
-      const res = await axios.get(`${API_URL}/me`);
+      const res = await axios.get(`${API_URL}/user/me`);
       return res.data;
     } catch (e) {
       console.log("Failed to fetch user", e.response?.data || e.message);
@@ -48,7 +46,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (name, email, password, confirmPassword) => {
     try {
-      const response = await axios.post(`${API_URL}/create`, {
+      const response = await axios.post(`${API_URL}/user/create`, {
         name,
         email,
         password,
@@ -67,7 +65,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
   try {
-    const result = await axios.post(`${API_URL}/token`, { email, password });
+    const result = await axios.post(`${API_URL}/user/token`, { email, password });
 
     const token = result.data.access;
     const refreshToken = result.data.refresh;
@@ -90,11 +88,11 @@ export const AuthProvider = ({ children }) => {
 
     return result;
   } catch (e) {
-    console.log("Login error:", e?.response?.data); // ✅ keep this!
+    console.log("Login error:", e?.response?.data);
 
     return {
       error: true,
-      msg: e?.response?.data ?? "Login failed.", // ✅ use actual backend errors
+      msg: e?.response?.data ?? "Login failed.",
     };
   }
 };
@@ -118,7 +116,7 @@ export const AuthProvider = ({ children }) => {
       const refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY)
       if(!refreshToken) throw new Error("No refresh Token found")
 
-      const response = await axios.post(`${API_URL}/token/refresh`, {
+      const response = await axios.post(`${API_URL}/user/token/refresh`, {
         refresh: refreshToken
       });
       const newAccessToken = response.data.access

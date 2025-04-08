@@ -8,6 +8,8 @@ from django.contrib.auth.models import (
     PermissionsMixin,
 )
 from django.utils.timezone import now
+from datetime import datetime, date
+
 
 
 class UserManager(BaseUserManager):
@@ -34,7 +36,7 @@ class UserManager(BaseUserManager):
 class User(AbstractBaseUser, PermissionsMixin):
     """User in the system"""
     email = models.EmailField(max_length=255, unique=True)
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=11)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
 

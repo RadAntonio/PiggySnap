@@ -10,7 +10,6 @@ class TagSerializer(serializers.ModelSerializer):
 class ReceiptSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True, required=False)
     date = serializers.DateTimeField(format="%Y-%m-%d",  input_formats=["%Y-%m-%d"])
-
     class Meta:
         model = Receipt
         fields = ['id', 'shop_name', 'items', 'total', 'date', 'tags']
