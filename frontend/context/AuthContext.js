@@ -4,7 +4,7 @@ import * as SecureStore from "expo-secure-store";
 
 const TOKEN_KEY = "user-token";
 const REFRESH_TOKEN_KEY = "refresh-token";
-export const API_URL = "http://192.168.1.136:8000/api";
+export const API_URL = "http://192.168.1.128:8000/api";
 const AuthContext = createContext();
 
 export const useAuth = () => useContext(AuthContext);
@@ -58,14 +58,14 @@ export const AuthProvider = ({ children }) => {
       console.log("Backend error:", data);
       return {
         error: true,
-        msg: data, // 👈 return the full object!
+        msg: data,
       };
     }
   };
 
   const login = async (email, password) => {
   try {
-    const result = await axios.post(`${API_URL}/user/token`, { email, password });
+    const result = await axios.post(`${API_URL}/user/token`, {email, password });
 
     const token = result.data.access;
     const refreshToken = result.data.refresh;

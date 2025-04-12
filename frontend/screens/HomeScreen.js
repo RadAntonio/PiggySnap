@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, Pressable } from "react-native";
 import Title from "../components/HomePage/Title";
 import TimeRangeFilter from "../components/HomePage/TimeFilterList";
 import StatsCardList from "../components/HomePage/StatsCardsList";
@@ -9,15 +9,21 @@ import { useEffect } from "react";
 import axios from "axios";
 import { API_URL } from "../context/AuthContext";
 import dayjs from "dayjs";
+import { useNavigation } from "@react-navigation/native";
+import { useRoute } from "@react-navigation/native";
 
 export default function HomeScreen() {
   const [selectedRange, setSelectedRange] = useState("Today");
+  const [filters, setFilters] = useState({});
   const [receipts, setReceipts] = useState([]);
+  const navigation = useNavigation();
+  const route = useRoute();
+  const filterParams = route.params || {};
 
-  const fetchReceipts = async (range = "Today") => {
+  const fetchReceipts = async (range = "Today", filters = {}) => {
     try {
       const today = dayjs();
-      const params = {};
+      const params = { ...filters };
 
       switch (range) {
         case "Today":
@@ -31,7 +37,9 @@ export default function HomeScreen() {
           break;
 
         case "This Month":
-          params.month = today.month() + 1;
+          if (!params.month) {
+            params.month = today.month() + 1;
+          }
           break;
 
         case "All Time":
@@ -57,12 +65,17 @@ export default function HomeScreen() {
   };
 
   useEffect(() => {
-    fetchReceipts(selectedRange);
-  }, []);
+    fetchReceipts(selectedRange, filters);
+  }, [selectedRange, filters]);
+
+  const resetFilters = () => {
+    setFilters({});
+    fetchReceipts(selectedRange, {}); // re-fetch with no filters
+  };
 
   const handleFilterChange = (range) => {
     setSelectedRange(range);
-    fetchReceipts(range);
+    fetchReceipts(range, filters);
   };
 
   const totalAmount = receipts.reduce((sum, r) => sum + r.amount, 0);
@@ -71,7 +84,31 @@ export default function HomeScreen() {
       <Title />
       <TimeRangeFilter onSelect={handleFilterChange} />
       <StatsCardList total={totalAmount} receiptCount={receipts.length} />
-      <Text style={styles.sectionTitle}>{selectedRange}'s Receipts</Text>
+      <View style={styles.sectionHeader}>
+        <View style={styles.filterRow}>
+          <Text style={styles.sectionTitle}>{selectedRange}'s Receipts</Text>
+
+          {Object.keys(filters).length > 0 && (
+            <Pressable onPress={resetFilters}>
+              <Text style={styles.resetButton}>Reset</Text>
+            </Pressable>
+          )}
+        </View>
+
+        <Pressable
+          onPress={() =>
+            navigation.navigate("FilterScreen", {
+              currentFilters: filters, // 👈 pass current filters
+              onApply: (appliedFilters) => {
+                setFilters(appliedFilters);
+              },
+            })
+          }
+        >
+          <Text style={styles.moreButton}>⋯</Text>
+        </Pressable>
+      </View>
+
       <View style={{ flex: 200 }}>
         <ReceiptList data={receipts} />
       </View>
@@ -87,5 +124,39 @@ const styles = StyleSheet.create({
     marginTop: 24,
     marginBottom: 12,
     color: "#1E1E1E",
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginHorizontal: 20,
+    marginTop: 24,
+    marginBottom: 12,
+  },
+
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#1E1E1E",
+  },
+
+  moreButton: {
+    fontSize: 26,
+    color: "#888",
+    paddingHorizontal: 10,
+  },
+  filterRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginHorizontal: 20,
+    marginBottom: 12,
+  },
+
+  resetButton: {
+    fontSize: 14,
+    color: "#6C63FF",
+    fontWeight: "600",
+    paddingHorizontal: 8,
   },
 });

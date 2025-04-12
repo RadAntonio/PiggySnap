@@ -5,7 +5,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
-import * as SplashScreen from 'expo-splash-screen';
+import * as SplashScreen from "expo-splash-screen";
 
 import GetStartedScreen from "./screens/GetStartedScreen";
 import SignupScreen from "./screens/SignupScreen";
@@ -13,9 +13,10 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import WelcomeScreen from "./screens/WelcomeScreen";
 import LoadingScreen from "./components/LoadingScree";
 import BottomTabNavigator from "./components/BottomTabNavigator";
+import FilterScreen from "./screens/FilterScreen";
 
 const TOKEN_KEY = "user-token";
-export const API_URL = "http://192.168.1.136:8000/api/user";
+export const API_URL = "http://192.168.1.128:8000/api/user";
 
 const Stack = createNativeStackNavigator();
 
@@ -26,12 +27,11 @@ export default function App() {
     <AuthProvider>
       <Layout></Layout>
     </AuthProvider>
-
   );
 }
 
 export const Layout = () => {
-  const { authState, setAuthState} = useAuth();
+  const { authState, setAuthState } = useAuth();
   const [isAppReady, setIsAppReady] = useState(false);
 
   const fetchUser = async () => {
@@ -88,7 +88,6 @@ export const Layout = () => {
     prepare();
   }, []);
 
-
   if (!isAppReady) return <LoadingScreen />;
 
   return (
@@ -97,11 +96,22 @@ export const Layout = () => {
       <NavigationContainer>
         <Stack.Navigator>
           {authState?.authenticated ? (
-            <Stack.Screen
-              name="MainApp"
-              component={BottomTabNavigator}
-              options={{headerShown: false}}
-            />
+            <>
+              <Stack.Screen
+                name="MainApp"
+                component={BottomTabNavigator}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="FilterScreen"
+                component={FilterScreen}
+                options={{
+                  presentation: "modal",
+                  animation: "slide_from_bottom",
+                  headerShown: false,
+                }}
+              />
+            </>
           ) : (
             <>
               <Stack.Screen

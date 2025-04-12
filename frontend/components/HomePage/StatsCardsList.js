@@ -1,4 +1,3 @@
-// components/HomePage/StatsCardList.js
 import React from "react";
 import { View, Text, StyleSheet, FlatList } from "react-native";
 import { Ionicons } from "@expo/vector-icons";

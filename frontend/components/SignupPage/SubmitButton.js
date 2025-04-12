@@ -7,7 +7,7 @@ const SubmitButton = ({ onPress, text, style, textStyle }) => {
 
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
-      toValue: 1.17,
+      toValue: 1.07,
       useNativeDriver: true,
     }).start();
   };

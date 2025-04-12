@@ -15,6 +15,9 @@ class ReceiptFilter(django_filters.FilterSet):
     start_date = django_filters.DateFilter(field_name='date', lookup_expr='gte')
     end_date = django_filters.DateFilter(field_name='date', lookup_expr='lte')
     month = django_filters.NumberFilter(method='filter_by_month')
+    day_of_month = django_filters.NumberFilter(method='filter_by_day')
+    year = django_filters.NumberFilter(field_name="date", lookup_expr="year")
+
 
 
     class Meta:
@@ -30,6 +33,8 @@ class ReceiptFilter(django_filters.FilterSet):
             'start_date',
             'end_date',
             'month',
+            'day_of_month',
+            'year',
         ]
 
     def filter_by_tags(self, queryset, name, value):
@@ -56,3 +61,7 @@ class ReceiptFilter(django_filters.FilterSet):
 
     def filter_by_month(self, queryset, name, value):
         return queryset.filter(date__month=int(value))
+
+    def filter_by_day(self, queryset, name, value):
+        return queryset.filter(date__day=int(value))
+

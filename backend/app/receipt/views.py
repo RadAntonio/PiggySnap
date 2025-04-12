@@ -23,6 +23,8 @@ from django_filters.rest_framework import DjangoFilterBackend
         OpenApiParameter('start_date', OpenApiTypes.DATE, OpenApiParameter.QUERY),
         OpenApiParameter('end_date', OpenApiTypes.DATE, OpenApiParameter.QUERY),
         OpenApiParameter('month', OpenApiTypes.INT, OpenApiParameter.QUERY),
+        OpenApiParameter('day_of_month', OpenApiTypes.INT, OpenApiParameter.QUERY),
+        OpenApiParameter('year', OpenApiTypes.INT, OpenApiParameter.QUERY),
     ]
 )
 class ReceiptViewSet(mixins.ListModelMixin,

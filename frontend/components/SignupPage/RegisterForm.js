@@ -71,7 +71,7 @@ function RegisterForm({ orLogin }) {
       if (backendErrors?.password) {
         setInputErrors((prev) => ({
           ...prev,
-          password: backendErrors.password[0], // display first password error
+          password: backendErrors.password[0],
         }));
       }
 
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
     marginBottom: 3,
   },
   inputInvalid: {
-    backgroundColor: "#ffe6e6", // soft red, not harsh red
+    backgroundColor: "#ffe6e6",
     borderColor: "red",
   },
   errorText: {
