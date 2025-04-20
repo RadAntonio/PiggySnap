@@ -14,6 +14,7 @@ import WelcomeScreen from "./screens/WelcomeScreen";
 import LoadingScreen from "./components/LoadingScree";
 import BottomTabNavigator from "./components/BottomTabNavigator";
 import FilterScreen from "./screens/FilterScreen";
+import ReceiptDetailsScreen from "./screens/ReceiptDetailsScreen";
 
 const TOKEN_KEY = "user-token";
 export const API_URL = "http://192.168.1.128:8000/api/user";
@@ -102,9 +103,19 @@ export const Layout = () => {
                 component={BottomTabNavigator}
                 options={{ headerShown: false }}
               />
+              {/* Modal screens accessible from any tab */}
               <Stack.Screen
                 name="FilterScreen"
                 component={FilterScreen}
+                options={{
+                  presentation: "modal",
+                  animation: "slide_from_bottom",
+                  headerShown: false,
+                }}
+              />
+              <Stack.Screen
+                name="ReceiptDetailsScreen"
+                component={ReceiptDetailsScreen}
                 options={{
                   presentation: "modal",
                   animation: "slide_from_bottom",

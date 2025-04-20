@@ -1,9 +1,25 @@
-// components/HomePage/ReceiptList.js
-import React from "react";
-import { FlatList, View, Text, StyleSheet, ScrollView } from "react-native";
+import React, { useState } from "react";
+import {
+  FlatList,
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Pressable,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
 
 export default function ReceiptList({ data }) {
+  const navigation = useNavigation();
+  const [isScrolling, setIsScrolling] = useState(false);
+
+  const handlePress = (item) => {
+    if (!isScrolling) {
+      navigation.navigate("ReceiptDetailsScreen", { receipt: item });
+    }
+  };
+
   if (!data || data.length === 0) {
     return (
       <View style={styles.emptyContainer}>
@@ -17,39 +33,45 @@ export default function ReceiptList({ data }) {
       data={data}
       keyExtractor={(item) => item.id.toString()}
       contentContainerStyle={styles.container}
-      scrollEnabled={true}
-      renderItem={({ item }) => (
-        <View style={styles.card}>
-          <View style={styles.left}>
-            <View style={styles.iconBox}>
+      renderItem={({ item }) => {
+        return (
+          <Pressable onPress={() => handlePress(item)}>
+            <View style={styles.card}>
+              <View style={styles.left}>
+                <View style={styles.iconBox}>
+                  <Ionicons
+                    name={
+                      item.category === "Electronics"
+                        ? "laptop-outline"
+                        : "cart-outline"
+                    }
+                    size={20}
+                    color="#6C63FF"
+                  />
+                </View>
+                <View>
+                  <Text style={styles.title}>{item.store}</Text>
+                  <Text style={styles.date}>{item.date}</Text>
 
-              <Ionicons
-                name={
-                  item.category === "Electronics"
-                    ? "laptop-outline"
-                    : "cart-outline"
-                }
-                size={20}
-                color="#6C63FF"
-              />
-            </View>
-            <View>
-              <Text style={styles.title}>{item.store}</Text>
-              <Text style={styles.date}>{item.date}</Text>
-              <View style={styles.tagScrollWrapper}>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                  {item.tags.map((tag, index) => (
-                    <View key={index} style={styles.tagBubble}>
-                      <Text style={styles.tagText}>{tag}</Text>
+                  {item.tags?.length > 0 && (
+                    <View style={styles.singleTagWrapper}>
+                      <View style={styles.tagBubble}>
+                        <Text style={styles.tagText}>
+                          {item.tags[0]}
+                          {item.tags.length > 1
+                            ? ` +${item.tags.length - 1} more`
+                            : ""}
+                        </Text>
+                      </View>
                     </View>
-                  ))}
-                </ScrollView>
+                  )}
+                </View>
               </View>
+              <Text style={styles.price}>{item.amount} RON</Text>
             </View>
-          </View>
-          <Text style={styles.price}>{item.amount} RON </Text>
-        </View>
-      )}
+          </Pressable>
+        );
+      }}
     />
   );
 }
@@ -98,21 +120,18 @@ const styles = StyleSheet.create({
     marginTop: 6,
     maxWidth: 220,
   },
-
   tagBubble: {
-    backgroundColor: '#E5D9FF',
+    backgroundColor: "#E5D9FF",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
     marginRight: 8,
   },
-
   tagText: {
     fontSize: 12,
-    color: '#6C63FF',
-    fontWeight: '500',
+    color: "#6C63FF",
+    fontWeight: "500",
   },
-
   price: {
     fontWeight: "700",
     fontSize: 16,

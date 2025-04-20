@@ -55,6 +55,7 @@ export default function HomeScreen() {
         date: r.date,
         amount: parseFloat(r.total),
         tags: r.tags.map((tag) => tag.name),
+        items: r.items
       }));
 
       setReceipts(mappedReceipts);
@@ -98,7 +99,7 @@ export default function HomeScreen() {
         <Pressable
           onPress={() =>
             navigation.navigate("FilterScreen", {
-              currentFilters: filters, // 👈 pass current filters
+              currentFilters: filters,
               onApply: (appliedFilters) => {
                 setFilters(appliedFilters);
               },
