@@ -15,6 +15,7 @@ import LoadingScreen from "./components/LoadingScree";
 import BottomTabNavigator from "./components/BottomTabNavigator";
 import FilterScreen from "./screens/FilterScreen";
 import ReceiptDetailsScreen from "./screens/ReceiptDetailsScreen";
+import ManualInputScreen from "./screens/ManualInputScreen";
 
 const TOKEN_KEY = "user-token";
 export const API_URL = "http://192.168.1.128:8000/api/user";
@@ -116,6 +117,15 @@ export const Layout = () => {
               <Stack.Screen
                 name="ReceiptDetailsScreen"
                 component={ReceiptDetailsScreen}
+                options={{
+                  presentation: "modal",
+                  animation: "slide_from_bottom",
+                  headerShown: false,
+                }}
+              />
+              <Stack.Screen
+                name="ManualInputScreen"
+                component={ManualInputScreen}
                 options={{
                   presentation: "modal",
                   animation: "slide_from_bottom",

@@ -29,7 +29,13 @@
     },
     "plugins": [
       "expo-font",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "This app accesses your photos to let you share them with your friends."
+        }
+      ]
     ]
   }
 }
