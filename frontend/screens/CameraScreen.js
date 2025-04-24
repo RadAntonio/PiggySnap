@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import {
   View,
-  Button,
   StyleSheet,
   Alert,
   ActivityIndicator,
@@ -15,18 +14,18 @@ import * as ImagePicker from "expo-image-picker";
 import { useNavigation } from "@react-navigation/native";
 import { useAuth, API_URL } from "../context/AuthContext";
 import { Colors } from "../constants/Colors";
-import Title from "../components/SignupPage/Title";
 
 export default function CameraScreen() {
   const { authState } = useAuth();
   const token = authState?.token;
   const { width } = useWindowDimensions();
+
   const [selectedImage, setSelectedImage] = useState(null);
   const [ocrResult, setOcrResult] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const navigation = useNavigation();
-  // shared upload + OCR logic
+
   async function uploadImageAsync(uri) {
     try {
       setLoading(true);
@@ -59,21 +58,32 @@ export default function CameraScreen() {
   }
 
   async function openCameraHandler() {
+    // Request camera permissions
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== "granted") {
       return Alert.alert("Permission Denied", "Camera access is required.");
     }
+    Alert.alert(
+      "Photo Instructions",
+      "1. Ensure that the receipt is well-lit.\n2. Use a dark background.\n3. Capture the entire receipt in the frame.",
+      [
+        {
+          text: "OK",
+          onPress: async () => {
+            const result = await ImagePicker.launchCameraAsync({
+              allowsEditing: false,
+              quality: 0.5,
+            });
 
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: false,
-      quality: 0.5,
-    });
-
-    if (!result.canceled) {
-      const uri = result.assets[0].uri;
-      setSelectedImage(uri);
-      await uploadImageAsync(uri);
-    }
+            if (!result.canceled) {
+              const uri = result.assets[0].uri;
+              setSelectedImage(uri);
+              await uploadImageAsync(uri);
+            }
+          },
+        },
+      ]
+    );
   }
 
   async function chooseFromGalleryHandler() {
@@ -84,17 +94,27 @@ export default function CameraScreen() {
         "Gallery access is required to choose a photo."
       );
     }
+    Alert.alert(
+      "Photo Instructions",
+      "1. Ensure that the receipt is well-lit.\n2. Use a dark background.\n3. Capture the entire receipt in the frame.",
+      [
+        {
+          text: "OK",
+          onPress: async () => {
+            const result = await ImagePicker.launchImageLibraryAsync({
+              allowsEditing: false,
+              quality: 0.5,
+            });
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      allowsEditing: false,
-      quality: 0.5,
-    });
-
-    if (!result.canceled) {
-      const uri = result.assets[0].uri;
-      setSelectedImage(uri);
-      await uploadImageAsync(uri);
-    }
+            if (!result.canceled) {
+              const uri = result.assets[0].uri;
+              setSelectedImage(uri);
+              await uploadImageAsync(uri);
+            }
+          },
+        },
+      ]
+    );
   }
 
   const data = [
@@ -103,14 +123,12 @@ export default function CameraScreen() {
       title: "Take a Photo",
       image: require("../assets/images/folder-line-chart-svgrepo-com.png"),
       onPress: openCameraHandler,
-
     },
     {
       key: "2",
       title: "Choose from Gallery",
       image: require("../assets/images/folder-line-chart-svgrepo-com.png"),
       onPress: chooseFromGalleryHandler,
-
     },
     {
       key: "3",
@@ -124,10 +142,7 @@ export default function CameraScreen() {
     return (
       <Pressable
         onPress={item.onPress}
-        style={[
-          styles.card,
-          { width: width * 0.9},
-        ]}
+        style={[styles.card, { width: width * 0.9 }]}
       >
         <Image
           source={item.image}
@@ -165,7 +180,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     minHeight: 220,
-    backgroundColor: 'rgba(239, 90, 111, 0.8)',
+    backgroundColor: "rgba(239, 90, 111, 0.8)",
   },
   image: {
     resizeMode: "contain",

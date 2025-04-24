@@ -11,6 +11,8 @@ import { API_URL } from "../context/AuthContext";
 import dayjs from "dayjs";
 import { useNavigation } from "@react-navigation/native";
 import { useRoute } from "@react-navigation/native";
+import { useFocusEffect } from "@react-navigation/native";
+import { useCallback } from "react";
 
 export default function HomeScreen() {
   const [selectedRange, setSelectedRange] = useState("Today");
@@ -78,6 +80,13 @@ export default function HomeScreen() {
     setSelectedRange(range);
     fetchReceipts(range, filters);
   };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchReceipts(selectedRange, filters);
+    }, [selectedRange, filters])
+  );
+
 
   const totalAmount = receipts.reduce((sum, r) => sum + r.amount, 0);
   return (

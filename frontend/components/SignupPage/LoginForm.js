@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
     marginBottom: 10
   },
   inputInvalid: {
-    backgroundColor: "#ffe6e6", // soft red, not harsh red
+    backgroundColor: "#ffe6e6",
     borderColor: "red",
   },
 });
