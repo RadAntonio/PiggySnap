@@ -17,9 +17,10 @@ import FilterScreen from "./screens/FilterScreen";
 import ReceiptDetailsScreen from "./screens/ReceiptDetailsScreen";
 import ManualInputScreen from "./screens/ManualInputScreen";
 import EditReceiptScreen from "./screens/EditReceiptScreen";
+import ForgotPasswordScreen from "./screens/ForgotPasswordScreen";
 
 const TOKEN_KEY = "user-token";
-export const API_URL = "http://192.168.1.128:8000/api/user";
+export const API_URL = "http://192.168.1.130:8000/api/user";
 
 const Stack = createNativeStackNavigator();
 
@@ -153,6 +154,11 @@ export const Layout = () => {
               <Stack.Screen
                 name="SignupScreen"
                 component={SignupScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="ForgotPasswordScreen"
+                component={ForgotPasswordScreen}
                 options={{ headerShown: false }}
               />
             </>

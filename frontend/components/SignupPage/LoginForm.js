@@ -9,11 +9,14 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
+  TouchableOpacity,
+
 } from "react-native";
 import { useState } from "react";
 import SubmitButton from "./SubmitButton";
 import { Colors } from "../../constants/Colors";
 import { useAuth } from "../../context/AuthContext";
+import { useNavigation } from "@react-navigation/native";
 
 const { width } = Dimensions.get("window");
 
@@ -27,6 +30,8 @@ function LoginForm({ orRegister }) {
     email: null,
     password: null,
   });
+
+  const navigation = useNavigation();
 
   const login = async () => {
     setInputErrors({ email: null, password: null });
@@ -60,6 +65,12 @@ function LoginForm({ orRegister }) {
     }
 
   };
+
+  const onForgotPassword = () => {
+    console.log("Forgot password clicked");
+    navigation.navigate("ForgotPasswordScreen");
+
+  }
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -120,6 +131,12 @@ function LoginForm({ orRegister }) {
                 marginHorizontal: -14,
               }}
             />
+          </View>
+          {/* Forgot Password Link */}
+          <View style={styles.forgotContainer}>
+            <TouchableOpacity onPress={onForgotPassword}>
+              <Text style={styles.forgotText}>Forgot password?</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -199,5 +216,16 @@ const styles = StyleSheet.create({
   inputInvalid: {
     backgroundColor: "#ffe6e6",
     borderColor: "red",
+  },
+  forgotContainer: {
+    marginTop: 16,
+    width: "100%",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  forgotText: {
+    fontSize: 14,
+    color: Colors.primary600,
+    fontWeight: "500",
   },
 });

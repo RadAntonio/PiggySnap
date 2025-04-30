@@ -1,15 +1,458 @@
-import React from "react";
-import { View, Text, StyleSheet, ScrollView } from "react-native";
-import { useFonts } from "expo-font";
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
+import DropDownPicker from "react-native-dropdown-picker";
+import axios from "axios";
 import { Colors } from "../constants/Colors";
-import Title from "../components/HomePage/Title";
+import { API_URL, useAuth } from "../context/AuthContext";
+import { useFonts } from "expo-font";
+import SubmitButton from "../components/SignupPage/SubmitButton";
 
-export default function ManualInputScreen({}) {
+export default function ManualInputScreen({ navigation }) {
+  const {
+    authState: { token },
+  } = useAuth();
+
+  // Load custom font
+  const [fontsLoaded] = useFonts({
+    "Frankfurt-Am6": require("../assets/fonts/Frankfurt-Am6.ttf"),
+  });
+  // if (!fontsLoaded) {
+  //   return (
+  //     <View style={styles.loader}>
+  //       <ActivityIndicator size="large" color={Colors.primary600} />
+  //     </View>
+  //   );
+  // }
+
+  // Form state
+  const [shopName, setShopName] = useState("");
+  const [total, setTotal] = useState("");
+  const [date, setDate] = useState("");
+  const [items, setItems] = useState([
+    { name: "", quantity: "", unit_price: "", price: "" },
+  ]);
+  const [errors, setErrors] = useState({});
+  const [saving, setSaving] = useState(false);
+
+  // Tags dropdown state
+  const [openTags, setOpenTags] = useState(false);
+  const [tagItems, setTagItems] = useState([]);
+  const [selectedTags, setSelectedTags] = useState([]);
+  const [showAddTagModal, setShowAddTagModal] = useState(false);
+  const [newTagName, setNewTagName] = useState("");
+
+  useEffect(() => {
+    axios
+      .get(`${API_URL}/receipt/tags/list`)
+      .then(res => {
+        setTagItems(res.data.map(t => ({ label: t.name, value: t.id })));
+      })
+      .catch(err => console.error("Error fetching tags:", err));
+  }, []);
+
+  const handleCreateTag = async () => {
+    if (!newTagName.trim()) return;
+    try {
+      const res = await axios.post(
+        `${API_URL}/receipt/tags/create`,
+        { name: newTagName },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const tag = res.data;
+      setTagItems(prev => [...prev, { label: tag.name, value: tag.id }]);
+      setSelectedTags(prev => [...prev, tag.id]);
+      setNewTagName("");
+      setShowAddTagModal(false);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Items handlers
+  const addItem = () =>
+    setItems(prev => [...prev, { name: "", quantity: "", unit_price: "", price: "" }]);
+  const removeItem = idx => setItems(prev => prev.filter((_, i) => i !== idx));
+  const updateItem = (idx, key, val) => {
+    const updated = [...items];
+    updated[idx][key] = val;
+    setItems(updated);
+  };
+
+  // Validate required fields
+  const validate = () => {
+    const errs = {};
+    if (!shopName.trim()) errs.shopName = "Shop name is required.";
+    if (!total.trim()) errs.total = "Total amount is required.";
+    if (!date.trim()) errs.date = "Date is required.";
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const handleCreate = async () => {
+    if (!validate()) return;
+    if (!token) return;
+    setSaving(true);
+
+    const payload = {
+      shop_name: shopName,
+      total: parseFloat(total),
+      date,
+      tags: selectedTags.map(id => {
+        const tag = tagItems.find(t => t.value === id);
+        return { id, name: tag?.label };
+      }),
+      items: items.map(it => ({
+        name: it.name,
+        quantity: parseFloat(it.quantity),
+        unit_price: parseFloat(it.unit_price),
+        price: parseFloat(it.price),
+      })),
+    };
+
+    try {
+      const res = await fetch(`${API_URL}/receipt/create`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error("Failed to create receipt");
+      navigation.goBack();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
-    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-      <Text>Manual Input Screen</Text>
-    </View>
+    <KeyboardAvoidingView
+      style={styles.flex}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={60}
+    >
+      <ScrollView
+        style={styles.flex}
+        contentContainerStyle={styles.contentContainer}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>New Receipt</Text>
+        </View>
+
+        {/* Shop Name */}
+        <Text style={styles.label}>Shop Name:</Text>
+        <TextInput
+          style={[styles.input, errors.shopName && styles.errorInput]}
+          value={shopName}
+          onChangeText={t => { setShopName(t); setErrors(e => ({ ...e, shopName: undefined })); }}
+          placeholder="Enter shop name"
+        />
+        {errors.shopName && <Text style={styles.errorText}>{errors.shopName}</Text>}
+
+        {/* Total */}
+        <Text style={styles.label}>Total:</Text>
+        <TextInput
+          style={[styles.input, errors.total && styles.errorInput]}
+          value={total}
+          onChangeText={t => { setTotal(t); setErrors(e => ({ ...e, total: undefined })); }}
+          placeholder="Enter total amount"
+          keyboardType="numeric"
+          onBlur={() => setTotal(total.replace(/[,]/g, "."))}
+        />
+        {errors.total && <Text style={styles.errorText}>{errors.total}</Text>}
+
+        {/* Date */}
+        <Text style={styles.label}>Date (YYYY-MM-DD):</Text>
+        <TextInput
+          style={[styles.input, errors.date && styles.errorInput]}
+          value={date}
+          onChangeText={t => { setDate(t); setErrors(e => ({ ...e, date: undefined })); }}
+          placeholder="YYYY-MM-DD"
+        />
+        {errors.date && <Text style={styles.errorText}>{errors.date}</Text>}
+
+        {/* Tags */}
+        <View style={styles.tagHeader}>
+          <Text style={styles.label}>Tags:</Text>
+          <SubmitButton
+            onPress={() => setShowAddTagModal(true)}
+            text="Create Tag"
+            style={[styles.smallButton, { backgroundColor: Colors.primary800 }]}
+            textStyle={styles.smallButtonText}
+          />
+        </View>
+        <View style={{ zIndex: 1000, marginBottom: 20 }}>
+          <DropDownPicker
+            multiple
+            open={openTags}
+            value={selectedTags}
+            items={tagItems}
+            setOpen={setOpenTags}
+            setValue={setSelectedTags}
+            setItems={setTagItems}
+            placeholder="Select tags"
+            listMode="SCROLLVIEW"
+            dropDownDirection="BOTTOM"
+            dropDownContainerStyle={styles.dropdownContainer}
+            style={styles.input}
+            maxHeight={200}
+          />
+        </View>
+
+        {/* Items */}
+        <View style={styles.itemsHeader}>
+          <Text style={styles.itemsTitle}>ITEMS:</Text>
+          <SubmitButton
+            onPress={addItem}
+            text="Add Item"
+            style={[styles.smallButton, { backgroundColor: Colors.primary800 }]}
+            textStyle={styles.smallButtonText}
+          />
+        </View>
+        {items.map((item, idx) => (
+          <View key={idx} style={styles.itemContainer}>
+            <View style={styles.itemHeader}>
+              <Text style={styles.itemLabel}>Item {idx + 1}</Text>
+              <SubmitButton
+                onPress={() => removeItem(idx)}
+                text="Delete"
+                style={styles.smallButton}
+                textStyle={styles.smallButtonText}
+              />
+            </View>
+            {['name', 'quantity', 'unit_price', 'price'].map(key => (
+              <TextInput
+                key={key}
+                style={styles.input}
+                value={item[key]}
+                onChangeText={v => updateItem(idx, key, v)}
+                placeholder={key.charAt(0).toUpperCase() + key.slice(1).replace('_', ' ')}
+                keyboardType={key === 'name' ? 'default' : 'numeric'}
+                onBlur={() => {
+                  if (key !== "name") {
+                    updateItem(idx, key, item[key].replace(/[,]/g, "."));
+                  }
+                }}
+              />
+            ))}
+          </View>
+        ))}
+
+        <SubmitButton
+          onPress={handleCreate}
+          text={saving ? "Saving..." : "Create Receipt"}
+          style={styles.saveButton}
+          textStyle={styles.saveButtonText}
+          disabled={saving}
+        />
+      </ScrollView>
+
+      {/* New Tag Modal */}
+      {showAddTagModal && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>New Tag</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Tag name"
+              value={newTagName}
+              onChangeText={setNewTagName}
+            />
+            <View style={styles.modalButtons}>
+              <SubmitButton
+                onPress={handleCreateTag}
+                text="Save"
+                textStyle={styles.modalButtonText}
+                style={{ backgroundColor: Colors.primary800, minWidth: 150 }}
+              />
+              <SubmitButton
+                text="Cancel"
+                onPress={() => { setShowAddTagModal(false); setNewTagName(""); }}
+                style={{ backgroundColor: Colors.primary600, minWidth: 150 }}
+                textStyle={styles.modalButtonText}
+              />
+            </View>
+          </View>
+        </View>
+      )}
+    </KeyboardAvoidingView>
   );
 }
 
-const styles = StyleSheet.create({});
+const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
+  contentContainer: {
+    flexGrow: 1,
+    padding: 16,
+  },
+  loader: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#fff",
+  },
+  titleContainer: {
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  title: {
+    fontSize: 54,
+    fontWeight: "700",
+    color: Colors.primary600,
+    fontFamily: "Frankfurt-Am6",
+    marginVertical: 20,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: "900",
+    textTransform: "uppercase",
+    color: Colors.primary800,
+  },
+  input: {
+    marginBottom: 12,
+    backgroundColor: "#F9F9F9",
+    padding: 12,
+    borderRadius: 12,
+    borderColor: "#E0E0E0",
+    borderWidth: 4,
+  },
+  errorInput: {
+    borderColor: "red",
+    opacity: 0.5,
+  },
+  errorText: {
+    color: "red",
+    marginTop: -8,
+    marginBottom: 12,
+    fontStyle: 'italic',
+    fontSize: 12,
+    opacity: 0.5,
+  },
+  tagHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 6,
+    borderBottomWidth: 6,
+    borderBottomColor: "#E0E0E0",
+    paddingBottom: 4,
+  },
+  dropdownContainer: {
+    backgroundColor: "#F9F9F9",
+    borderRadius: 12,
+    borderColor: "#E0E0E0",
+    borderWidth: 4,
+  },
+  itemsHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 6,
+    borderBottomWidth: 6,
+    borderBottomColor: "#E0E0E0",
+    paddingBottom: 4,
+  },
+  itemsTitle: {
+    fontSize: 16,
+    fontWeight: "900",
+    color: Colors.primary800,
+  },
+  smallButton: {
+    backgroundColor: Colors.primary600,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    height: 30,
+  },
+  smallButtonText: {
+    color: "white",
+    fontSize: 12,
+  },
+  itemContainer: {
+    marginBottom: 16,
+    padding: 12,
+    backgroundColor: "#F9F9F9",
+    borderRadius: 12,
+    borderColor: "#E0E0E0",
+    borderWidth: 4,
+  },
+  itemHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  itemLabel: {
+    fontSize: 14,
+    fontWeight: "900",
+    textTransform: "uppercase",
+    color: Colors.primary800,
+  },
+  saveButton: {
+    backgroundColor: Colors.primary800,
+    height: 50,
+    marginTop: 10,
+    marginBottom: 50,
+  },
+  saveButtonText: {
+    color: "white",
+    fontSize: 18,
+    marginVertical: -10,
+    marginHorizontal: -14,
+  },
+  modalOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 999,
+  },
+  modalContent: {
+    width: "80%",
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 12,
+  },
+  modalTitle: {
+    fontSize: 38,
+    fontWeight: "bold",
+    marginBottom: 12,
+    textAlign: "center",
+    color: Colors.primary600,
+    fontFamily: "Frankfurt-Am6",
+  },
+  modalInput: {
+    backgroundColor: "#F9F9F9",
+    padding: 12,
+    borderRadius: 12,
+    borderColor: "#E0E0E0",
+    borderWidth: 4,
+    marginBottom: 12,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  modalButtonText: {
+    color: "#fff",
+    fontSize: 14,
+  },
+});

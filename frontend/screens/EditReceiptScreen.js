@@ -27,21 +27,20 @@ export default function EditReceiptScreen({ route, navigation }) {
   const [fontsLoaded] = useFonts({
     "Frankfurt-Am6": require("../assets/fonts/Frankfurt-Am6.ttf"),
   });
-  if (!fontsLoaded) {
-    return (
-      <View style={styles.loader}>
-        <ActivityIndicator size="large" color={Colors.primary600} />
-      </View>
-    );
-  }
-
+  // if (!fontsLoaded) {
+  //   return (
+  //     <View style={styles.loader}>
+  //       <ActivityIndicator size="large" color={Colors.primary600} />
+  //     </View>
+  //   );
+  // }
 
   const [shopName, setShopName] = useState(receipt.store || "");
   const [total, setTotal] = useState(String(receipt.amount || ""));
   const [date, setDate] = useState(receipt.date || "");
   const [saving, setSaving] = useState(false);
 
-
+  const [errors, setErrors] = useState({});
   const [openTags, setOpenTags] = useState(false);
   const [tagItems, setTagItems] = useState([]);
   const [selectedTags, setSelectedTags] = useState([]);
@@ -101,7 +100,17 @@ export default function EditReceiptScreen({ route, navigation }) {
       { name: "", quantity: "", unit_price: "", price: "" },
     ]);
 
+  const validate = () => {
+    const errs = {};
+    if (!shopName.trim()) errs.shopName = "Shop name is required.";
+    if (!total.trim()) errs.total = "Total amount is required.";
+    if (!date.trim()) errs.date = "Date is required.";
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
   const handleSave = async () => {
+    if (!validate()) return;
     if (!token) return Alert.alert("Not authenticated", "Please log in first.");
     setSaving(true);
     try {
@@ -161,28 +170,40 @@ export default function EditReceiptScreen({ route, navigation }) {
         </View>
         <Text style={styles.label}>Shop Name:</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, errors.shopName && styles.errorInput]}
           value={shopName}
-          onChangeText={setShopName}
+          onChangeText={(t) => {
+            setShopName(t);
+            setErrors((e) => ({ ...e, shopName: undefined }));
+          }}
           placeholder="Enter shop name"
         />
+        {errors.shopName && (
+          <Text style={styles.errorText}>{errors.shopName}</Text>
+        )}
         <Text style={styles.label}>Total:</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, errors.total && styles.errorInput]}
           value={total}
-          onChangeText={setTotal}
+          onChangeText={(t) => {
+            setTotal(t);
+            setErrors((e) => ({ ...e, total: undefined }));
+          }}
           placeholder="Enter total amount"
           keyboardType="numeric"
+          onBlur={() => setTotal(total.replace(/[,]/g, "."))}
         />
+        {errors.total && <Text style={styles.errorText}>{errors.total}</Text>}
 
         {/* Date */}
         <Text style={styles.label}>Date (YYYY-MM-DD):</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, errors.date && styles.errorInput]}
           value={date}
-          onChangeText={setDate}
+          onChangeText={t => { setDate(t); setErrors(e => ({ ...e, date: undefined })); }}
           placeholder="YYYY-MM-DD"
         />
+        {errors.date && <Text style={styles.errorText}>{errors.date}</Text>}
         <View style={styles.tagHeader}>
           <Text style={styles.label}>Tags:</Text>
           <SubmitButton
@@ -243,7 +264,12 @@ export default function EditReceiptScreen({ route, navigation }) {
                 placeholder={
                   key.charAt(0).toUpperCase() + key.slice(1).replace("_", " ")
                 }
-                keyboardType={key === "name" ? "default" : "decimal-pad"}
+                keyboardType={key === "name" ? "default" : "numeric"}
+                onBlur={() => {
+                  if (key !== "name") {
+                    updateItem(idx, key, item[key].replace(/[,]/g, "."));
+                  }
+                }}
               />
             ))}
           </View>
@@ -257,35 +283,35 @@ export default function EditReceiptScreen({ route, navigation }) {
         />
       </ScrollView>
       {showAddTagModal && (
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>New Tag</Text>
-              <TextInput
-                style={styles.modalInput}
-                placeholder="Tag name"
-                value={newTagName}
-                onChangeText={setNewTagName}
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>New Tag</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Tag name"
+              value={newTagName}
+              onChangeText={setNewTagName}
+            />
+            <View style={styles.modalButtons}>
+              <SubmitButton
+                onPress={handleCreateTag}
+                text="Save"
+                textStyle={styles.modalButtonText}
+                style={{ backgroundColor: Colors.primary800, minWidth: 150 }}
               />
-              <View style={styles.modalButtons}>
-                <SubmitButton
-                  onPress={handleCreateTag}
-                  text="Save"
-                  textStyle={styles.modalButtonText}
-                  style={{ backgroundColor: Colors.primary800, minWidth: 150 }}
-                />
-                <SubmitButton
-                  text="Cancel"
-                  onPress={() => {
-                    setShowAddTagModal(false);
-                    setNewTagName("");
-                  }}
-                  style={{ backgroundColor: Colors.primary600, minWidth: 150 }}
-                  textStyle={styles.modalButtonText}
-                />
-              </View>
+              <SubmitButton
+                text="Cancel"
+                onPress={() => {
+                  setShowAddTagModal(false);
+                  setNewTagName("");
+                }}
+                style={{ backgroundColor: Colors.primary600, minWidth: 150 }}
+                textStyle={styles.modalButtonText}
+              />
             </View>
           </View>
-        )}
+        </View>
+      )}
     </KeyboardAvoidingView>
   );
 }
@@ -407,19 +433,19 @@ const styles = StyleSheet.create({
     marginHorizontal: -14,
   },
   modalOverlay: {
-    position: 'absolute',
-    top:  0,    // cover entire parent
+    position: "absolute",
+    top: 0, // cover entire parent
     left: 0,
-    right:0,
+    right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 999,       // float above everything
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 999, // float above everything
   },
   modalContent: {
-    width: '80%',
-    backgroundColor: '#fff',
+    width: "80%",
+    backgroundColor: "#fff",
     padding: 20,
     borderRadius: 12,
   },
@@ -452,5 +478,17 @@ const styles = StyleSheet.create({
   modalButtonText: {
     color: "#fff",
     fontSize: 14,
+  },
+  errorInput: {
+    borderColor: "red",
+    opacity: 0.5,
+  },
+  errorText: {
+    color: "red",
+    marginTop: -8,
+    marginBottom: 12,
+    fontStyle: 'italic',
+    fontSize: 12,
+    opacity: 0.5,
   },
 });

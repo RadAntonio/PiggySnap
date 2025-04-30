@@ -7,6 +7,8 @@ import StatsScreen from "../screens/StatsScreen";
 import CameraScreen from "../screens/CameraScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 
+import { Colors } from "../constants/Colors";
+
 const BottomTab = createBottomTabNavigator();
 
 export default function BottomTabNavigator() {
@@ -23,7 +25,7 @@ export default function BottomTabNavigator() {
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: "#6C63FF",
+        tabBarActiveTintColor: Colors.primary600,
         tabBarInactiveTintColor: "gray",
         headerShown: false,
       })}

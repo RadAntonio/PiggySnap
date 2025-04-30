@@ -73,7 +73,7 @@ export default function HomeScreen() {
 
   const resetFilters = () => {
     setFilters({});
-    fetchReceipts(selectedRange, {}); // re-fetch with no filters
+    fetchReceipts(selectedRange, {});
   };
 
   const handleFilterChange = (range) => {

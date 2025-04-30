@@ -4,7 +4,7 @@ import * as SecureStore from "expo-secure-store";
 
 const TOKEN_KEY = "user-token";
 const REFRESH_TOKEN_KEY = "refresh-token";
-export const API_URL = "http://192.168.1.128:8000/api";
+export const API_URL = "http://192.168.1.130:8000/api";
 const AuthContext = createContext();
 
 export const useAuth = () => useContext(AuthContext);
