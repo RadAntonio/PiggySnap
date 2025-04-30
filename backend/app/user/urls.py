@@ -14,5 +14,15 @@ urlpatterns = [
     path('create', views.CreateUserView.as_view(), name='create'),
     path('token', views.CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh', TokenRefreshView.as_view(), name='token_refresh'),
-    path('me', views.ManageUserView.as_view(), name='me')
+    path('me', views.ManageUserView.as_view(), name='me'),
+    path(
+        "forgot-password",
+        views.ForgotPasswordAPIView.as_view(),
+        name="forgot-password",
+    ),
+    path(
+        "reset-password/<uidb64>/<token>",
+        views.ResetPasswordAPIView.as_view(),
+        name="reset-password",
+    ),
 ]
