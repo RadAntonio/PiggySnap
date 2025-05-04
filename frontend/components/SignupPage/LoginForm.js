@@ -4,73 +4,53 @@ import {
   TextInput,
   StyleSheet,
   Dimensions,
-  Button,
   KeyboardAvoidingView,
   Platform,
   TouchableWithoutFeedback,
-  Keyboard,
   TouchableOpacity,
-
+  Keyboard,
+  Button,
 } from "react-native";
-import { useState } from "react";
+import { useState, useEffect, use } from "react";
 import SubmitButton from "./SubmitButton";
 import { Colors } from "../../constants/Colors";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigation } from "@react-navigation/native";
+import axios from "axios";
+
+import { API_URL } from "../../context/AuthContext";
 
 const { width } = Dimensions.get("window");
 
-function LoginForm({ orRegister }) {
+export default function LoginForm({ orRegister }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
-  const { onLogin } = useAuth();
-
   const [inputErrors, setInputErrors] = useState({
     email: null,
     password: null,
   });
 
+  const { onLogin } = useAuth();
   const navigation = useNavigation();
 
   const login = async () => {
     setInputErrors({ email: null, password: null });
-
     const result = await onLogin(email, password);
-    console.log("Login result", result);
-
     if (result?.error) {
       const msg = result.msg;
-
-      if (typeof msg === "object") {
-        const newErrors = {};
-
-        if (msg.email) {
-          newErrors.email = msg.email[0];
-        }
-
-        if (msg.password) {
-          newErrors.password = msg.password[0];
-        }
-
-        if (msg.non_field_errors) {
-          newErrors.email = msg.non_field_errors[0];
-          newErrors.password = msg.non_field_errors[0];
-        }
-
-        setInputErrors(newErrors);
-        return;
+      const newErrors = {};
+      if (msg.email) newErrors.email = msg.email[0];
+      if (msg.password) newErrors.password = msg.password[0];
+      if (msg.non_field_errors) {
+        newErrors.email = msg.non_field_errors[0];
+        newErrors.password = msg.non_field_errors[0];
       }
-      alert("Login failed.");
+      setInputErrors(newErrors);
     }
-
   };
-
   const onForgotPassword = () => {
-    console.log("Forgot password clicked");
     navigation.navigate("ForgotPasswordScreen");
-
-  }
+  };
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -80,6 +60,7 @@ function LoginForm({ orRegister }) {
         <View style={styles.card}>
           <Text style={styles.title}>Log In</Text>
 
+          {/* email */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Email</Text>
             <TextInput
@@ -94,6 +75,8 @@ function LoginForm({ orRegister }) {
               <Text style={styles.errorText}>{inputErrors.email}</Text>
             )}
           </View>
+
+          {/* password */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Password</Text>
             <TextInput
@@ -111,6 +94,7 @@ function LoginForm({ orRegister }) {
             )}
           </View>
 
+          {/* regular login */}
           <View style={styles.buttonContainer}>
             <SubmitButton
               text="Log In"
@@ -118,6 +102,7 @@ function LoginForm({ orRegister }) {
               style={{ backgroundColor: Colors.primary800 }}
             />
           </View>
+          {/* sign up / forgot */}
           <View style={styles.inlineRow}>
             <Text style={styles.inlineText}>Not registered? </Text>
             <SubmitButton
@@ -132,7 +117,6 @@ function LoginForm({ orRegister }) {
               }}
             />
           </View>
-          {/* Forgot Password Link */}
           <View style={styles.forgotContainer}>
             <TouchableOpacity onPress={onForgotPassword}>
               <Text style={styles.forgotText}>Forgot password?</Text>
@@ -144,16 +128,12 @@ function LoginForm({ orRegister }) {
   );
 }
 
-export default LoginForm;
-
 const styles = StyleSheet.create({
   card: {
     width: width * 0.9,
     marginHorizontal: width * 0.05,
     borderRadius: 28,
     padding: 24,
-    justifyContent: "center",
-    //alignItems: "center",
     marginBottom: 150,
   },
   title: {
@@ -163,6 +143,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: "center",
   },
+  inputGroup: { width: "100%", alignItems: "flex-start" },
+  label: { fontSize: 14, color: "#536493", fontWeight: "600", marginBottom: 3 },
   input: {
     width: "100%",
     backgroundColor: "#fff",
@@ -174,9 +156,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.primary200,
   },
-  buttonContainer: {
-    marginVertical: 10,
+  inputInvalid: { backgroundColor: "#ffe6e6", borderColor: "red" },
+  errorText: {
+    opacity: 0.8,
+    fontStyle: "italic",
+    fontSize: 12,
+    color: Colors.primary600,
+    marginTop: -10,
+    marginBottom: 10,
   },
+  buttonContainer: { marginVertical: 10 },
   inlineRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -184,48 +173,12 @@ const styles = StyleSheet.create({
     width: "100%",
     justifyContent: "center",
   },
-
-  inlineText: {
-    fontSize: 16,
-    color: Colors.primary800,
-  },
-
-  inlineLink: {
-    fontSize: 16,
-    color: Colors.primary800,
-    fontWeight: "bold",
-  },
-  inputGroup: {
-    width: "100%",
-    alignItems: "flex-start",
-  },
-  label: {
-    fontSize: 14,
-    color: "#536493",
-    fontWeight: "600",
-    marginBottom: 3,
-  },
-  errorText: {
-    opacity: 0.8,
-    fontStyle: "italic",
-    fontSize: 12,
-    color: Colors.primary600,
-    marginTop: -10,
-    marginBottom: 10
-  },
-  inputInvalid: {
-    backgroundColor: "#ffe6e6",
-    borderColor: "red",
-  },
+  inlineText: { fontSize: 16, color: Colors.primary800 },
   forgotContainer: {
     marginTop: 16,
     width: "100%",
     alignItems: "center",
     marginBottom: 12,
   },
-  forgotText: {
-    fontSize: 14,
-    color: Colors.primary600,
-    fontWeight: "500",
-  },
+  forgotText: { fontSize: 14, color: Colors.primary600, fontWeight: "500" },
 });

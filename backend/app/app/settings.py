@@ -181,3 +181,6 @@ EMAIL_HOST_PASSWORD ='podj pvfu kbbx sdhz'
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 SERVER_EMAIL = EMAIL_HOST_USER
 
+GOOGLE_CLIENT_ID = '363134745953-ue2tuhonlljdaoos71qtm4bsouut9dc2.apps.googleusercontent.com'
+
+

@@ -25,4 +25,5 @@ urlpatterns = [
         views.ResetPasswordAPIView.as_view(),
         name="reset-password",
     ),
+     path('google-login', views.GoogleLoginAPIView.as_view(), name='google-login'),
 ]

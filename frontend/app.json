@@ -1,5 +1,6 @@
 {
   "expo": {
+    "owner": "radtoni",
     "name": "frontend",
     "slug": "frontend",
     "version": "1.0.0",
@@ -7,6 +8,7 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "schema" : "com.radtoni.frontend",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -14,6 +16,7 @@
     },
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.radtoni.frontend",
       "config": {
         "usesNonExemptEncryption": false
       }
@@ -22,7 +25,11 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.example.frontend"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -35,7 +42,18 @@
         {
           "cameraPermission": "This app accesses your photos to let you share them with your friends."
         }
+      ],
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.363134745953-ue2tuhonlljdaoos71qtm4bsouut9dc2"
+        }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "6ceae88a-2780-4002-99d1-d24bb48dc07e"
+      }
+    }
   }
 }

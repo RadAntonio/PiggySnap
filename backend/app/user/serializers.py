@@ -113,3 +113,6 @@ class ResetPasswordSerializer(serializers.Serializer):
             raise serializers.ValidationError(form.errors)
         form.save()
         return user
+
+class GoogleAuthSerializer(serializers.Serializer):
+    id_token = serializers.CharField()
