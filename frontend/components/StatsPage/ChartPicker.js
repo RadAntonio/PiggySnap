@@ -5,7 +5,7 @@ import { Calendar } from "react-native-calendars";
 import { Colors } from "../../constants/Colors";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
-const CHART_TYPES = ["Spending", "Stores", "Calendar"];
+const CHART_TYPES = ["Calendar", "Spendings", "Stores"];
 const THRESHOLDS = [0.2, 0.4, 0.6, 0.8, 1.0];
 const COLORS = [
   "#FFF5F6",
@@ -61,7 +61,7 @@ export default function ChartPicker({ data = [] }) {
 
   const renderChart = () => {
     switch (selectedType) {
-      case "Spending":
+      case "Spendings":
         return (
           <LineChart
             data={lineData}

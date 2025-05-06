@@ -19,7 +19,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = get_user_model()
-        fields = ['name', 'email', 'password', 'confirm_password']
+        fields = ['name', 'email', 'password', 'confirm_password', 'two_factor_enabled']
         extra_kwargs = {'password': {'write_only': True}}
 
     def validate(self, attrs):
@@ -114,5 +114,13 @@ class ResetPasswordSerializer(serializers.Serializer):
         form.save()
         return user
 
-class GoogleAuthSerializer(serializers.Serializer):
-    id_token = serializers.CharField()
+class TokenObtainPair2FASerializer(serializers.Serializer):
+    email    = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+
+class TokenVerify2FASerializer(serializers.Serializer):
+    pre_token = serializers.CharField(write_only=True)
+    token     = serializers.CharField(write_only=True, min_length=6, max_length=6)
+
+class TokenVerify2FASerializer1(serializers.Serializer):
+    token     = serializers.CharField(write_only=True, min_length=6, max_length=6)

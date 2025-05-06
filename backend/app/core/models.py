@@ -1,6 +1,7 @@
 """
 DataBase models
 """
+import pyotp
 from django.db import models
 from django.contrib.auth.models import (
     AbstractBaseUser,
@@ -43,6 +44,23 @@ class User(AbstractBaseUser, PermissionsMixin):
     objects = UserManager()
 
     USERNAME_FIELD = 'email'
+    totp_secret        = models.CharField(
+        max_length=32,
+        blank=True,
+        help_text="Base32 secret key for TOTP-2FA"
+    )
+    two_factor_enabled = models.BooleanField(
+        default=False,
+        help_text="Whether the user has completed TOTP setup"
+    )
+
+    @property
+    def totp(self):
+        # lazy-provision a secret on first use
+        if not self.totp_secret:
+            self.totp_secret = pyotp.random_base32()
+            self.save(update_fields=['totp_secret'])
+        return pyotp.TOTP(self.totp_secret)
 
 def today_as_datetime():
     today = now().date()

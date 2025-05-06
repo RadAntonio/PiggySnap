@@ -10,7 +10,7 @@ export default function Title() {
     <View style={styles.container}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>Welcome back, {name}!</Text>
+          <Text style={styles.greeting}>Welcome, {name}!</Text>
           <Text style={styles.subtitle}>Smart spending leads to better living</Text>
         </View>
       </View>

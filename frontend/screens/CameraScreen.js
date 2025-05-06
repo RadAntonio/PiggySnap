@@ -121,19 +121,19 @@ export default function CameraScreen() {
     {
       key: "1",
       title: "Take a Photo",
-      image: require("../assets/images/folder-line-chart-svgrepo-com.png"),
+      image: require("../assets/images/camera-svgrepo-com.png"),
       onPress: openCameraHandler,
     },
     {
       key: "2",
       title: "Choose from Gallery",
-      image: require("../assets/images/folder-line-chart-svgrepo-com.png"),
+      image: require("../assets/images/picture-svgrepo-com.png"),
       onPress: chooseFromGalleryHandler,
     },
     {
       key: "3",
       title: "Introduce Manually",
-      image: require("../assets/images/folder-line-chart-svgrepo-com.png"),
+      image: require("../assets/images/article-svgrepo-com.png"),
       onPress: () => navigation.navigate("ManualInputScreen"),
     },
   ];
@@ -146,7 +146,7 @@ export default function CameraScreen() {
       >
         <Image
           source={item.image}
-          style={[styles.image, { width: width * 0.2, height: width * 0.2 }]}
+          style={[styles.image, { width: width* 0.25, height: width * 0.25 }]}
         />
         <Text style={styles.title}>{item.title}</Text>
       </Pressable>

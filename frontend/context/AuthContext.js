@@ -1,163 +1,159 @@
-import { createContext, useContext, useEffect, useState } from "react";
+// AuthContext.js
+import React, { createContext, useContext, useEffect, useState } from "react";
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 
 const TOKEN_KEY = "user-token";
 const REFRESH_TOKEN_KEY = "refresh-token";
 export const API_URL = "http://192.168.1.130:8000/api";
-const AuthContext = createContext();
 
+const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
   const [authState, setAuthState] = useState({
     token: null,
-    authenticated: null,
+    authenticated: false,
     user: null,
   });
 
+  // 1) on mount, load any stored token & fetch user
   useEffect(() => {
-    const loadToken = async () => {
+    (async () => {
       const token = await SecureStore.getItemAsync(TOKEN_KEY);
-      console.log("token", token);
-
       if (token) {
         axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-
-        setAuthState({
-          token: token,
-          authenticated: true,
-          user,
-        });
+        const user = await fetchUser();
+        setAuthState({ token, authenticated: true, user });
       }
-    };
-    loadToken();
+    })();
   }, []);
 
+  // helper to GET /user/me
   const fetchUser = async () => {
     try {
       const res = await axios.get(`${API_URL}/user/me`);
       return res.data;
     } catch (e) {
-      console.log("Failed to fetch user", e.response?.data || e.message);
+      console.warn("fetchUser failed", e.response?.data || e.message);
       return null;
     }
   };
 
+  // REGISTER (unchanged)
   const register = async (name, email, password, confirmPassword) => {
     try {
-      const response = await axios.post(`${API_URL}/user/create`, {
+      return await axios.post(`${API_URL}/user/create`, {
         name,
         email,
         password,
         confirm_password: confirmPassword,
       });
-      return response;
-    } catch (error) {
-      const data = error?.response?.data;
-      console.log("Backend error:", data);
-      return {
-        error: true,
-        msg: data,
-      };
+    } catch (e) {
+      return { error: true, msg: e.response?.data };
     }
   };
 
+  // 1️⃣ STEP 1: login credentials
   const login = async (email, password) => {
-  try {
-    const result = await axios.post(`${API_URL}/user/token`, {email, password });
+    try {
+      const res = await axios.post(`${API_URL}/user/token`, { email, password });
 
-    const token = result.data.access;
-    const refreshToken = result.data.refresh;
+      // if your DRF view returned require2fa + pre_token:
+      if (res.data.require2fa) {
+        return {
+          twoFactorRequired: true,
+          preToken: res.data.pre_token,
+        };
+      }
 
-    if (!token || !refreshToken) {
-      return { error: true, msg: "No token received." };
+      // otherwise we got immediate access/refresh
+      const { access, refresh } = res.data;
+      await SecureStore.setItemAsync(TOKEN_KEY, access);
+      await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refresh);
+      axios.defaults.headers.common["Authorization"] = `Bearer ${access}`;
+
+      const user = await fetchUser();
+      setAuthState({ token: access, authenticated: true, user });
+      return { error: false };
+    } catch (e) {
+      console.warn("login error:", e.response?.data || e.message);
+      return { error: true, msg: e.response?.data || "Login failed." };
     }
+  };
 
-    await SecureStore.setItemAsync(TOKEN_KEY, token);
-    await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refreshToken)
+  // 2️⃣ STEP 2: verify 2FA
+  const verify2fa = async (preToken, code) => {
+    try {
+      const res = await axios.post(`${API_URL}/user/token/verify-2fa`, {
+        pre_token: preToken,
+        token: code,         // must be named `token` in the payload
+      });
 
-    axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-    const user = await fetchUser()
+      const { access, refresh } = res.data;
+      await SecureStore.setItemAsync(TOKEN_KEY, access);
+      await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refresh);
+      axios.defaults.headers.common["Authorization"] = `Bearer ${access}`;
 
-    setAuthState({
-      token,
-      authenticated: true,
-      user,
-    });
+      const user = await fetchUser();
+      setAuthState({ token: access, authenticated: true, user });
+      return { error: false };
+    } catch (e) {
+      console.warn("2fa verify error:", e.response?.data || e.message);
+      return { error: true, msg: e.response?.data || "2FA verification failed." };
+    }
+  };
 
-    return result;
-  } catch (e) {
-    console.log("Login error:", e?.response?.data);
-
-    return {
-      error: true,
-      msg: e?.response?.data ?? "Login failed.",
-    };
-  }
-};
-
-
+  // LOGOUT (unchanged)
   const logout = async () => {
     await SecureStore.deleteItemAsync(TOKEN_KEY);
     await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
-
-    axios.defaults.headers.common["Authorization"] = "";
-
-    setAuthState({
-      token: null,
-      authenticated: false,
-      user: null,
-    });
+    delete axios.defaults.headers.common["Authorization"];
+    setAuthState({ token: null, authenticated: false, user: null });
   };
 
-  const refreshAccesToken = async () => {
-    try {
-      const refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY)
-      if(!refreshToken) throw new Error("No refresh Token found")
-
-      const response = await axios.post(`${API_URL}/user/token/refresh`, {
-        refresh: refreshToken
-      });
-      const newAccessToken = response.data.access
-
-      await SecureStore.setItemAsync(TOKEN_KEY, newAccessToken);
-      axios.defaults.headers.common["Authorization"] = `Bearer ${newAccessToken}`
-
-      setAuthState[{token: newAccessToken, authenticated: true}]
-
-      return newAccessToken
-    } catch(error) {
-      logout();
-      return null;
-    }
-  }
-
+  // OPTIONAL: refresh‐token interceptor
   axios.interceptors.response.use(
-    response => response,
-    async error => {
+    (r) => r,
+    async (error) => {
       const originalRequest = error.config;
-
-      if (
-        error.response?.status === 401 && !originalRequest._retry
-      ) {
+      if (error.response?.status === 401 && !originalRequest._retry) {
         originalRequest._retry = true;
+        const refresh = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+        if (!refresh) return logout() && Promise.reject(error);
 
-        const newAccessToken = await refreshAccesToken();
-
-        if(newAccessToken) {
-          originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`
-          return axios(originalRequest)
+        try {
+          const { data } = await axios.post(`${API_URL}/user/token/refresh`, {
+            refresh,
+          });
+          await SecureStore.setItemAsync(TOKEN_KEY, data.access);
+          axios.defaults.headers.common["Authorization"] = `Bearer ${data.access}`;
+          return axios(originalRequest);
+        } catch {
+          await logout();
+          return Promise.reject(error);
         }
       }
-      return Promise.reject(error)
+      return Promise.reject(error);
     }
-  )
+  );
+
+  const enable2fa = async () => {
+    try {
+      const { data } = await axios.post(`${API_URL}/user/2fa/enable`);
+      return { error: false, data };
+    } catch (e) {
+      console.warn("enable2fa error:", e.response?.data || e.message);
+      return { error: true, msg: e.response?.data || e.message };
+    }
+  };
 
   const value = {
     onRegister: register,
     onLogin: login,
+    onVerify2fa: verify2fa,
     onLogout: logout,
+    onEnable2fa: enable2fa,
     authState,
     setAuthState,
   };

@@ -96,26 +96,26 @@ export default function StatsScreen() {
     },
     { store: "", count: 0 }
   );
-  const highestSpentTag = receipts.reduce(
-    (prev, { tags, amount }) => {
-      // pick the primary tag (or fallback)
-      const tag = tags[0] || "Uncategorized";
+  // const highestSpentTag = receipts.reduce(
+  //   (prev, { tags, amount }) => {
+  //     // pick the primary tag (or fallback)
+  //     const tag = tags[0] || "Uncategorized";
 
-      // total spent so far on prev.tag
-      const prevTotal = receipts
-        .filter((r) => (r.tags[0] || "Uncategorized") === prev.tag)
-        .reduce((sum, r) => sum + r.amount, 0);
+  //     // total spent so far on prev.tag
+  //     const prevTotal = receipts
+  //       .filter((r) => (r.tags[0] || "Uncategorized") === prev.tag)
+  //       .reduce((sum, r) => sum + r.amount, 0);
 
-      // total spent so far on this receipt’s tag
-      const currTotal = receipts
-        .filter((r) => (r.tags[0] || "Uncategorized") === tag)
-        .reduce((sum, r) => sum + r.amount, 0);
+  //     // total spent so far on this receipt’s tag
+  //     const currTotal = receipts
+  //       .filter((r) => (r.tags[0] || "Uncategorized") === tag)
+  //       .reduce((sum, r) => sum + r.amount, 0);
 
-      // pick whichever has the larger running total
-      return currTotal > prevTotal ? { tag, total: currTotal } : prev;
-    },
-    { tag: "", total: 0 }
-  );
+  //     // pick whichever has the larger running total
+  //     return currTotal > prevTotal ? { tag, total: currTotal } : prev;
+  //   },
+  //   { tag: "", total: 0 }
+  // );
 
   return (
     <View style={{ backgroundColor: "#F9F9FB", flex: 1 }}>

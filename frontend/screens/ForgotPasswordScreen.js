@@ -31,7 +31,7 @@ function ForgotPasswordScreen() {
     setLoading(true);
     try {
       const { data } = await axios.post(
-        `${API_URL}/user/forgot-password`,
+        `${API_URL}/user/forgot-password/`,
         { email }
       );
       Alert.alert(

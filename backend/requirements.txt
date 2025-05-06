@@ -11,4 +11,5 @@ opencv-python-headless
 numpy>=1.20
 spacy
 django-filter
-google-auth
+pyotp
+qrcode[pil]
