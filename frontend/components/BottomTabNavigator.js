@@ -33,7 +33,18 @@ export default function BottomTabNavigator() {
       <BottomTab.Screen name="Home" component={HomeScreen} />
       <BottomTab.Screen name="Stats" component={StatsScreen} />
       <BottomTab.Screen name="Camera" component={CameraScreen} />
-      <BottomTab.Screen name="Profile" component={ProfileScreen} />
+      <BottomTab.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{
+          headerShown: true,
+          headerTitleStyle: {
+            fontSize: 24,
+            color: Colors.primary800,
+            fontWeight: "bold",
+          },
+        }}
+      />
     </BottomTab.Navigator>
   );
 }

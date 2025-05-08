@@ -13,3 +13,6 @@ spacy
 django-filter
 pyotp
 qrcode[pil]
+reportlab
+PyPDF2
+pyzipper

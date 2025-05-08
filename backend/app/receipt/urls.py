@@ -11,4 +11,6 @@ urlpatterns = [
     path('tags/create', TagViewSet.as_view({'post': 'create'}), name='create'),
     path('tags/update/<int:pk>', TagViewSet.as_view({'patch': 'partial_update'}), name='partial_update'),
     path('tags/delete/<int:pk>', TagViewSet.as_view({'delete': 'destroy'}), name='delete'),
+    path('send-pdf/', ReceiptViewSet.as_view({'post': 'send_pdf'}), name='receipts-send-pdf'),
+    path('send-csv/', ReceiptViewSet.as_view({'post': 'send_csv'}), name='receipts-send-csv'),
 ]

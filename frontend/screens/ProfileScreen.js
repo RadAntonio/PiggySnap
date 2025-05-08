@@ -1,5 +1,5 @@
 // screens/ProfileScreen.js
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useLayoutEffect } from "react";
 import {
   View,
   Text,
@@ -13,8 +13,10 @@ import {
   Alert,
   ActivityIndicator,
   TouchableOpacity,
+  Pressable,
 } from "react-native";
 import * as Clipboard from "expo-clipboard";
+import { Ionicons } from "@expo/vector-icons";
 import SubmitButton from "../components/SignupPage/SubmitButton";
 import { Colors } from "../constants/Colors";
 import { useAuth } from "../context/AuthContext";
@@ -23,10 +25,36 @@ import { API_URL } from "../context/AuthContext";
 
 const { width } = Dimensions.get("window");
 
-export default function ProfileScreen() {
+export default function ProfileScreen({ navigation }) {
   const { authState, onLogout, setAuthState } = useAuth();
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // ─── New loading states for export buttons ────────────────────────
+  const [sendingPdf, setSendingPdf] = useState(false);
+  const [sendingCsv, setSendingCsv] = useState(false);
+  // ────────────────────────────────────────────────────────────────────────
+
+  // overlay states
+  const [showPdfOverlay, setShowPdfOverlay] = useState(false);
+  const [showCsvOverlay, setShowCsvOverlay] = useState(false);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+
+  // inject logout icon button into header
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity onPress={onLogout} style={{ marginRight: 16 }}>
+          <Ionicons
+            name="log-out-outline"
+            size={24}
+            color={Colors.primary800}
+          />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, onLogout]);
 
   // 2FA setup state
   const [enabling, setEnabling] = useState(false);
@@ -72,10 +100,9 @@ export default function ProfileScreen() {
   const handleEnable2fa = async () => {
     setEnabling(true);
     try {
-      const res = await axios.get(
-        `${API_URL}/user/2fa/enable/`,
-        { headers: { Authorization: `Bearer ${authState.token}` } }
-      );
+      const res = await axios.get(`${API_URL}/user/2fa/enable/`, {
+        headers: { Authorization: `Bearer ${authState.token}` },
+      });
       setActivationCode(res.data.activation_code);
     } catch (err) {
       console.warn(err);
@@ -138,6 +165,56 @@ export default function ProfileScreen() {
 
   const has2fa = authState.user?.two_factor_enabled;
 
+  // open overlay
+  const openPdfOverlay = () => {
+    setShowPdfOverlay(true);
+  };
+  const openCsvOverlay = () => {
+    setShowCsvOverlay(true);
+  };
+
+  // Confirm and send PDF with date params as query params
+  const handleConfirmPdf = async () => {
+    setShowPdfOverlay(false);
+    setSendingPdf(true);
+    try {
+      await axios.post(
+        `${API_URL}/receipt/send-pdf/`,
+        {}, // empty body
+        {
+          headers: { Authorization: `Bearer ${authState.token}` },
+          params: { start_date: startDate, end_date: endDate },
+        }
+      );
+      Alert.alert("Success", "Encrypted PDF emailed!");
+    } catch {
+      Alert.alert("Error", "Could not send PDF.");
+    } finally {
+      setSendingPdf(false);
+    }
+  };
+
+  // Confirm and send CSV with date params as query params
+  const handleConfirmCsv = async () => {
+    setShowCsvOverlay(false);
+    setSendingCsv(true);
+    try {
+      await axios.post(
+        `${API_URL}/receipt/send-csv/`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${authState.token}` },
+          params: { start_date: startDate, end_date: endDate },
+        }
+      );
+      Alert.alert("Success", "Encrypted CSV emailed!");
+    } catch {
+      Alert.alert("Error", "Could not send CSV.");
+    } finally {
+      setSendingCsv(false);
+    }
+  };
+
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <KeyboardAvoidingView
@@ -145,8 +222,6 @@ export default function ProfileScreen() {
         style={styles.container}
       >
         <View style={styles.card}>
-          <Text style={styles.title}>Profile</Text>
-
           {/* — Name update — */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Name</Text>
@@ -159,25 +234,34 @@ export default function ProfileScreen() {
           <SubmitButton
             text={loading ? "Saving…" : "Update Name"}
             onPress={handleUpdateName}
-            style={{ backgroundColor: Colors.primary600 }}
+            style={[styles.button, { backgroundColor: Colors.primary600 }]}
             disabled={loading}
           />
-
-          {/* — Log out — */}
+          {/* — Export Buttons — */}
           <SubmitButton
-            text="Log Out"
-            onPress={onLogout}
-            style={{ backgroundColor: Colors.primary800, marginTop: 10 }}
+            text={sendingPdf ? "Sending PDF…" : "Export PDF"}
+            onPress={openPdfOverlay}
+            style={[styles.button, { backgroundColor: Colors.primary800 }]}
+            disabled={sendingPdf}
+          />
+          <SubmitButton
+            text={sendingCsv ? "Sending CSV…" : "Export CSV"}
+            onPress={openCsvOverlay}
+            style={[styles.button, { backgroundColor: Colors.primary800 }]}
+            disabled={sendingCsv}
           />
 
           {/* — 2FA Section — */}
-          <View style={{ marginTop: 30 }}>
+          <View style={styles.twoFaGroup}>
             {has2fa ? (
               // already on → allow disable
               <SubmitButton
                 text={disabling ? "Disabling…" : "Disable 2FA"}
                 onPress={handleDisable2fa}
-                style={{ backgroundColor: Colors.error || "#b00" }}
+                style={[
+                  styles.button,
+                  { backgroundColor: Colors.error || "#b00" },
+                ]}
                 disabled={disabling}
               />
             ) : activationCode ? (
@@ -189,12 +273,13 @@ export default function ProfileScreen() {
                 <TouchableOpacity
                   onPress={async () => {
                     await Clipboard.setStringAsync(activationCode);
-                    Alert.alert("Copied!", "Activation code copied to clipboard.");
+                    Alert.alert(
+                      "Copied!",
+                      "Activation code copied to clipboard."
+                    );
                   }}
                 >
-                  <Text style={styles.activationCode}>
-                    {activationCode}
-                  </Text>
+                  <Text style={styles.activationCode}>{activationCode}</Text>
                 </TouchableOpacity>
 
                 <View style={styles.inputGroup}>
@@ -204,10 +289,7 @@ export default function ProfileScreen() {
                     value={verifyCode}
                     onChangeText={setVerifyCode}
                     keyboardType="numeric"
-                    style={[
-                      styles.input,
-                      verifyError && styles.inputInvalid,
-                    ]}
+                    style={[styles.input, verifyError && styles.inputInvalid]}
                   />
                   {verifyError ? (
                     <Text style={styles.errorText}>{verifyError}</Text>
@@ -216,16 +298,19 @@ export default function ProfileScreen() {
                 <SubmitButton
                   text={verifying ? "Verifying…" : "Verify 2FA"}
                   onPress={handleVerify2fa}
-                  style={{ backgroundColor: Colors.primary800 }}
+                  style={[
+                    styles.button,
+                    { backgroundColor: Colors.primary800 },
+                  ]}
                   disabled={verifying}
                 />
               </>
             ) : (
-              // initial “Enable 2FA” button
+              // initial “Enable 2FA” button with updated layout styling
               <SubmitButton
                 text={enabling ? "Generating…" : "Enable 2FA"}
                 onPress={handleEnable2fa}
-                style={{ backgroundColor: Colors.primary800 }}
+                style={[styles.button, { backgroundColor: Colors.primary800 }]}
                 disabled={enabling}
               />
             )}
@@ -234,6 +319,87 @@ export default function ProfileScreen() {
               <ActivityIndicator style={{ marginTop: 10 }} />
             )}
           </View>
+          {/* — PDF Overlay — */}
+          {showPdfOverlay && (
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalBox}>
+                <Text style={styles.modalTitle}>Select Interval</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  placeholder="Start Date (YYYY-MM-DD)"
+                  value={startDate}
+                  onChangeText={setStartDate}
+                />
+                <TextInput
+                  style={styles.modalInput}
+                  placeholder="End Date (YYYY-MM-DD)"
+                  value={endDate}
+                  onChangeText={setEndDate}
+                />
+                <View style={styles.modalButtons}>
+                  <Pressable
+                    style={[
+                      styles.modalButton,
+                      { backgroundColor: Colors.primary600 },
+                    ]}
+                    onPress={() => setShowPdfOverlay(false)}
+                  >
+                    <Text style={styles.modalButtonText}>Cancel</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[
+                      styles.modalButton,
+                      { backgroundColor: Colors.primary800 },
+                    ]}
+                    onPress={handleConfirmPdf}
+                  >
+                    <Text style={styles.modalButtonText}>Confirm</Text>
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+          )}
+
+          {/* — CSV Overlay — */}
+          {showCsvOverlay && (
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalBox}>
+                <Text style={styles.modalTitle}>Select Interval</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  placeholder="Start Date (YYYY-MM-DD)"
+                  value={startDate}
+                  onChangeText={setStartDate}
+                />
+                <TextInput
+                  style={styles.modalInput}
+                  placeholder="End Date (YYYY-MM-DD)"
+                  value={endDate}
+                  onChangeText={setEndDate}
+                />
+                <View style={styles.modalButtons}>
+                  <Pressable
+                    style={[
+                      styles.modalButton,
+                      { backgroundColor: Colors.primary600 },
+                    ]}
+                    onPress={() => setShowCsvOverlay(false)}
+                  >
+                    <Text style={styles.modalButtonText}>Cancel</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[
+                      styles.modalButton,
+                      { backgroundColor: Colors.primary800 },
+                    ]}
+                    onPress={handleConfirmCsv}
+                  >
+                    <Text style={styles.modalButtonText}>Confirm</Text>
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+          )}
         </View>
       </KeyboardAvoidingView>
     </TouchableWithoutFeedback>
@@ -241,47 +407,106 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center" },
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    backgroundColor: Colors.background,
+  },
   card: {
     width: width * 0.9,
     alignSelf: "center",
     borderRadius: 28,
     padding: 24,
-    backgroundColor: "#fff",
-    elevation: 3,
+    elevation: 5,
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: "bold",
     color: Colors.primary800,
-    marginBottom: 20,
+    marginBottom: 24,
     textAlign: "center",
   },
-  inputGroup: { marginBottom: 16 },
-  label: { fontSize: 14, color: Colors.primary600, marginBottom: 4 },
+  inputGroup: { marginBottom: 20 },
+  label: { fontSize: 16, color: Colors.primary600, marginBottom: 6 },
   input: {
-    backgroundColor: "#f9f9f9",
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.primary200,
+    backgroundColor: "#f0f0f0",
+    padding: 16,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: Colors.primary800,
+    fontSize: 16,
   },
   inputInvalid: {
     borderColor: "red",
     backgroundColor: "#fee",
   },
   errorText: { color: "red", marginTop: 4, fontSize: 12 },
+  twoFaGroup: { marginTop: 30, alignItems: "center" },
+  button: {
+    width: "100%",
+    paddingVertical: 14,
+    borderRadius: 20,
+    marginTop: 12,
+  },
   instruction: {
     textAlign: "center",
     marginVertical: 12,
     color: Colors.primary800,
+    fontSize: 16,
   },
   activationCode: {
     textAlign: "center",
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "600",
     letterSpacing: 2,
     color: Colors.primary800,
     marginBottom: 16,
   },
+  modalOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalBox: {
+    width: "80%",
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    padding: 8,
+    marginVertical: 6,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 12,
+  },
+  modalButton: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    marginHorizontal: 4,
+  },
+  modalButtonText: { color: "#fff", fontWeight: "600" },
 });
