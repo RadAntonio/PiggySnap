@@ -40,6 +40,7 @@ export default function ProfileScreen({ navigation }) {
   const [showCsvOverlay, setShowCsvOverlay] = useState(false);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [allTime, setAllTime] = useState(false);
 
   // inject logout icon button into header
   useLayoutEffect(() => {
@@ -167,9 +168,11 @@ export default function ProfileScreen({ navigation }) {
 
   // open overlay
   const openPdfOverlay = () => {
+    setAllTime(false);
     setShowPdfOverlay(true);
   };
   const openCsvOverlay = () => {
+    setAllTime(false);
     setShowCsvOverlay(true);
   };
 
@@ -184,6 +187,7 @@ export default function ProfileScreen({ navigation }) {
         {
           headers: { Authorization: `Bearer ${authState.token}` },
           params: { start_date: startDate, end_date: endDate },
+          params: allTime ? {} : { start_date: startDate, end_date: endDate },
         }
       );
       Alert.alert("Success", "Encrypted PDF emailed!");
@@ -205,6 +209,7 @@ export default function ProfileScreen({ navigation }) {
         {
           headers: { Authorization: `Bearer ${authState.token}` },
           params: { start_date: startDate, end_date: endDate },
+          params: allTime ? {} : { start_date: startDate, end_date: endDate },
         }
       );
       Alert.alert("Success", "Encrypted CSV emailed!");
@@ -324,6 +329,12 @@ export default function ProfileScreen({ navigation }) {
             <View style={styles.modalOverlay}>
               <View style={styles.modalBox}>
                 <Text style={styles.modalTitle}>Select Interval</Text>
+                <Pressable
+                  style={[styles.modalButton, styles.allTimeButtonActive]}
+                  onPress={handleConfirmPdf}
+                >
+                  <Text style={styles.allTimeButtonText}>All Time</Text>
+                </Pressable>
                 <TextInput
                   style={styles.modalInput}
                   placeholder="Start Date (YYYY-MM-DD)"
@@ -336,6 +347,7 @@ export default function ProfileScreen({ navigation }) {
                   value={endDate}
                   onChangeText={setEndDate}
                 />
+
                 <View style={styles.modalButtons}>
                   <Pressable
                     style={[
@@ -365,6 +377,13 @@ export default function ProfileScreen({ navigation }) {
             <View style={styles.modalOverlay}>
               <View style={styles.modalBox}>
                 <Text style={styles.modalTitle}>Select Interval</Text>
+                <Pressable
+                  style={[styles.modalButton, styles.allTimeButtonActive]}
+                  onPress={handleConfirmCsv}
+                >
+                  <Text style={styles.modalButtonText}>All Time</Text>
+                </Pressable>
+
                 <TextInput
                   style={styles.modalInput}
                   placeholder="Start Date (YYYY-MM-DD)"
@@ -377,6 +396,7 @@ export default function ProfileScreen({ navigation }) {
                   value={endDate}
                   onChangeText={setEndDate}
                 />
+
                 <View style={styles.modalButtons}>
                   <Pressable
                     style={[
@@ -474,6 +494,8 @@ const styles = StyleSheet.create({
   },
   modalBox: {
     width: "80%",
+    height: "auto",
+    minHeight: 280,
     backgroundColor: "#fff",
     borderRadius: 12,
     padding: 16,
@@ -508,5 +530,29 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginHorizontal: 4,
   },
-  modalButtonText: { color: "#fff", fontWeight: "600" },
+  modalButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+  },
+  allTimeButtonActive: {
+    backgroundColor: Colors.primary800,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginVertical: 6,
+    justifyContent: "center", // <-- vertically center children
+    alignItems: "center", // <-- horizontally center children
+  },
+  allTimeButtonInactive: {
+    backgroundColor: Colors.primary600,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginVertical: 6,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  allTimeButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    textAlign: "center",
+  },
 });

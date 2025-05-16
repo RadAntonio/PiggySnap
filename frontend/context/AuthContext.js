@@ -112,31 +112,50 @@ export const AuthProvider = ({ children }) => {
     setAuthState({ token: null, authenticated: false, user: null });
   };
 
-  // OPTIONAL: refresh‐token interceptor
   axios.interceptors.response.use(
-    (r) => r,
-    async (error) => {
-      const originalRequest = error.config;
-      if (error.response?.status === 401 && !originalRequest._retry) {
-        originalRequest._retry = true;
-        const refresh = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
-        if (!refresh) return logout() && Promise.reject(error);
-
-        try {
-          const { data } = await axios.post(`${API_URL}/user/token/refresh`, {
-            refresh,
-          });
-          await SecureStore.setItemAsync(TOKEN_KEY, data.access);
-          axios.defaults.headers.common["Authorization"] = `Bearer ${data.access}`;
-          return axios(originalRequest);
-        } catch {
-          await logout();
-          return Promise.reject(error);
-        }
-      }
+  res => res,
+  async error => {
+    const cfg = error.config;
+    if (
+      !cfg ||                        // no config → not an axios call
+      !error.response ||             // no response → bail
+      cfg._retry ||                  // already retried once
+      cfg.url.endsWith("/api/user/token/refresh")  // don’t refresh the refresh call!
+    ) {
       return Promise.reject(error);
     }
-  );
+
+    if (error.response.status === 401) {
+      cfg._retry = true;
+      const refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+      if (!refreshToken) { await logout(); return Promise.reject(error); }
+
+      try {
+        const { data } = await axios.post(
+          `${API_URL}/user/token/refresh`,
+          { refresh: refreshToken }
+        );
+        // store new tokens
+        await SecureStore.setItemAsync(TOKEN_KEY, data.access);
+        await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, data.refresh);
+
+        // update headers
+        axios.defaults.headers.common["Authorization"] = `Bearer ${data.access}`;
+        cfg.headers["Authorization"] = `Bearer ${data.access}`;
+
+        return axios(cfg);
+      } catch (err) {
+        await logout();
+        return Promise.reject(err);
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
+
+
+
 
   const enable2fa = async () => {
     try {

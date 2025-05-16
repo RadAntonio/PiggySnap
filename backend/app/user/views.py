@@ -13,6 +13,8 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
+#from ratelimit.decorators import ratelimit
+
 from user.serializers import UserSerializer
 from .serializers import (
     ForgotPasswordSerializer,
@@ -25,6 +27,7 @@ from .serializers import (
 User = get_user_model()
 
 
+# @ratelimit(key='user', rate='100/day', block=True)
 @extend_schema(
     request=UserSerializer,
     responses=UserSerializer
@@ -33,6 +36,7 @@ class CreateUserView(generics.CreateAPIView):
     serializer_class = UserSerializer
 
 
+# @ratelimit(key='user', rate='1000/day', block=True)
 class ManageUserView(generics.RetrieveUpdateAPIView):
     serializer_class = UserSerializer
     authentication_classes = [JWTAuthentication]
@@ -42,6 +46,7 @@ class ManageUserView(generics.RetrieveUpdateAPIView):
         return self.request.user
 
 
+# @ratelimit(key='user', rate='200/day', block=True)
 class ForgotPasswordAPIView(generics.GenericAPIView):
     serializer_class = ForgotPasswordSerializer
 
@@ -56,6 +61,7 @@ class ForgotPasswordAPIView(generics.GenericAPIView):
         )
 
 
+# @ratelimit(key='user', rate='200/day', block=True)
 class ResetPasswordAPIView(generics.GenericAPIView):
     serializer_class = ResetPasswordSerializer
 
@@ -70,6 +76,7 @@ class ResetPasswordAPIView(generics.GenericAPIView):
         )
 
 
+# @ratelimit(key='user', rate='500/day', block=True)
 class Enable2FAView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -107,6 +114,7 @@ class Enable2FAView(APIView):
 
 
 @extend_schema(request=TokenVerify2FASerializer1)
+# @ratelimit(key='user', rate='500/day', block=True)
 class Verify2FASetupView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -126,6 +134,7 @@ class Verify2FASetupView(APIView):
     request=TokenObtainPair2FASerializer,
     responses={200: OpenApiResponse(description="…")}
 )
+# @ratelimit(key='ip', rate='50/hour', block=True)
 class TokenObtainPair2FA(APIView):
     """
     POST /api/user/token/ → { access, refresh } OR { require2fa, pre_token }
@@ -158,6 +167,7 @@ class TokenObtainPair2FA(APIView):
         })
 
 
+# @ratelimit(key='ip', rate='50/hour', block=True)
 @extend_schema(request=TokenVerify2FASerializer)
 class TokenVerify2FA(APIView):
     """
@@ -199,6 +209,8 @@ class TokenVerify2FA(APIView):
             "refresh": str(r)
         })
 
+
+# @ratelimit(key='user', rate='200/day', block=True)
 class Disable2FAView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     def post(self, request):
